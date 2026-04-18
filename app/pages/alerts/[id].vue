@@ -1,171 +1,279 @@
 <template>
-  <div class="space-y-6">
-    <!-- Header with back button and actions -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-4">
-        <button @click="navigateTo('/alerts')" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-          <ArrowLeftIcon class="h-5 w-5" />
+  <div class="space-y-5">
+
+    <!-- Back + title + actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <button
+          @click="navigateTo('/alerts')"
+          class="p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-white dark:hover:bg-slate-800 dark:text-slate-400 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all"
+        >
+          <ArrowLeftIcon class="h-4 w-4" />
         </button>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-          Alert #{{ alert?.id?.slice(0, 8) }}
-        </h1>
-        <span :class="statusBadgeClass(alert?.status)">{{ alert?.status }}</span>
+        <div>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white font-mono">
+              #{{ alert?.id?.slice(0, 8) }}
+            </h1>
+            <span :class="statusBadgeClass(alert?.status)">
+              <span :class="statusDotClass(alert?.status)" class="inline-block h-1.5 w-1.5 rounded-full mr-1.5"></span>
+              {{ statusLabel(alert?.status) }}
+            </span>
+            <span v-if="alert?.type" :class="typeBadgeClass(alert.type)">
+              {{ alert.type }}
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Triggered {{ alert?.createdAt ? formatDistanceToNow(new Date(alert.createdAt)) + ' ago' : '' }}</p>
+        </div>
       </div>
-      <div class="flex space-x-3">
-        <button v-if="alert?.status === 'active'" @click="markAsFalseAlarm" class="btn-secondary">
-          <ExclamationTriangleIcon class="h-4 w-4 mr-2" />
-          Mark False Alarm
+      <div class="flex items-center gap-2">
+        <button
+          v-if="alert?.status === 'active'"
+          @click="markAsFalseAlarm"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all"
+        >
+          <ExclamationTriangleIcon class="h-4 w-4 text-amber-500" />
+          False Alarm
         </button>
-        <button v-if="alert?.status === 'active'" @click="resolveAlert" class="btn-primary">
-          <CheckCircleIcon class="h-4 w-4 mr-2" />
+        <button
+          v-if="alert?.status === 'active'"
+          @click="resolveAlert"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 transition-all"
+        >
+          <CheckCircleIcon class="h-4 w-4" />
           Resolve Alert
         </button>
       </div>
     </div>
 
-    <!-- Alert Overview Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Alert Type</dt>
-        <dd class="mt-1 flex items-center">
-          <span :class="alertTypeBadgeClass(alert?.type)" class="text-lg font-semibold">
-            {{ alert?.type?.toUpperCase() }}
-          </span>
-        </dd>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Triggered At</dt>
-        <dd class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
-          {{ formatDateTime(alert?.createdAt) }}
-        </dd>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Elapsed Time</dt>
-        <dd class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
-          {{ elapsedTime }}
-        </dd>
-      </div>
-    </div>
-
-    <!-- Map and User Info Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div class="lg:col-span-2 h-80 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h3 class="text-md font-medium mb-2">Incident Location</h3>
-        <ClientOnly>
-          <AlertDetailMap :location="alert?.location" />
-        </ClientOnly>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h3 class="text-md font-medium mb-3">User Information</h3>
-        <div v-if="alert?.user" class="space-y-2">
-          <p class="text-sm"><span class="font-medium">Name:</span> {{ alert.user.name }}</p>
-          <p class="text-sm"><span class="font-medium">Phone:</span> {{ alert.user.phone }}</p>
-          <p class="text-sm"><span class="font-medium">Email:</span> {{ alert.user.email }}</p>
-          <NuxtLink :to="`/users/${alert.user.id}`" class="text-primary-600 hover:underline text-sm">
-            View full profile →
-          </NuxtLink>
+    <!-- KPI cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <!-- Alert type -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Alert Type</p>
+        <div class="mt-3 flex items-center gap-3">
+          <div :class="['h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0', typeIconBg(alert?.type)]">
+            <component :is="typeIcon(alert?.type)" :class="['h-5 w-5', typeIconColor(alert?.type)]" />
+          </div>
+          <span class="text-lg font-bold text-slate-900 dark:text-white capitalize">{{ alert?.type || '—' }}</span>
         </div>
-        <div v-else class="text-gray-500">User data unavailable</div>
+      </div>
+      <!-- Triggered at -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Triggered At</p>
+        <p class="mt-3 text-lg font-bold text-slate-900 dark:text-white">
+          {{ alert?.createdAt ? formatDateTime(alert.createdAt) : '—' }}
+        </p>
+      </div>
+      <!-- Elapsed time -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Elapsed Time</p>
+        <p class="mt-3 text-lg font-bold text-slate-900 dark:text-white font-mono">{{ elapsedTime }}</p>
       </div>
     </div>
 
-    <!-- Response Timeline -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-      <h3 class="text-md font-medium mb-4">Response Timeline</h3>
-      <div class="flow-root">
-        <ul role="list" class="-mb-8">
-          <li v-for="(event, eventIdx) in timelineEvents" :key="event.id">
-            <div class="relative pb-8">
-              <span v-if="eventIdx !== timelineEvents.length - 1" class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700" aria-hidden="true" />
-              <div class="relative flex space-x-3">
-                <div>
-                  <span :class="[event.iconBg, 'h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-gray-800']">
-                    <component :is="event.icon" class="h-5 w-5 text-white" aria-hidden="true" />
-                  </span>
-                </div>
-                <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
-                  <div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                      {{ event.content }}
-                      <span v-if="event.detail" class="font-medium text-gray-900 dark:text-white">{{ event.detail }}</span>
-                    </p>
-                  </div>
-                  <div class="whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
-                    <time :datetime="event.datetime">{{ event.time }}</time>
-                  </div>
-                </div>
+    <!-- Map + User info -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- Map -->
+      <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+          <MapPinIcon class="h-4 w-4 text-sky-500" />
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Incident Location</h3>
+          <span v-if="alert?.location?.address" class="text-xs text-slate-500 dark:text-slate-400 ml-1">— {{ alert.location.address }}</span>
+        </div>
+        <div class="h-72 p-1">
+          <ClientOnly>
+            <AlertDetailMap :location="alert?.location" />
+          </ClientOnly>
+        </div>
+      </div>
+
+      <!-- User info -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+          <UserCircleIcon class="h-4 w-4 text-sky-500" />
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">User Information</h3>
+        </div>
+        <div class="p-5">
+          <div v-if="alert?.user">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="h-11 w-11 rounded-full bg-linear-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow shrink-0">
+                {{ getInitials(alert.user.name) }}
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ alert.user.name }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Registered user</p>
               </div>
             </div>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Manual Response Time Update (admin only) -->
-      <div class="mt-6 border-t pt-4">
-        <h4 class="text-sm font-medium mb-2">Update Response Times (Admin)</h4>
-        <form @submit.prevent="updateResponseTimes" class="flex flex-wrap items-end gap-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-500">Agency Notified At</label>
-            <input v-model="responseForm.agencyNotifiedAt" type="datetime-local" class="mt-1 block rounded-md border-gray-300 text-sm" />
+            <dl class="space-y-3">
+              <div class="flex items-center gap-2">
+                <PhoneIcon class="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <span class="text-sm text-slate-700 dark:text-slate-300">{{ alert.user.phone }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <EnvelopeIcon class="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                <span class="text-sm text-slate-700 dark:text-slate-300 truncate">{{ alert.user.email }}</span>
+              </div>
+            </dl>
+            <NuxtLink
+              :to="`/users/${alert.user.id}`"
+              class="mt-5 flex items-center gap-1.5 text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 transition-colors"
+            >
+              View full profile
+              <ArrowRightIcon class="h-3 w-3" />
+            </NuxtLink>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500">Agency Arrived At</label>
-            <input v-model="responseForm.agencyArrivedAt" type="datetime-local" class="mt-1 block rounded-md border-gray-300 text-sm" />
-          </div>
-          <button type="submit" class="btn-primary text-sm">Save Times</button>
-        </form>
+          <div v-else class="text-sm text-slate-400 py-4 text-center">User data unavailable</div>
+        </div>
       </div>
     </div>
 
-    <!-- Contacts Notified & Verification Status -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h3 class="text-md font-medium mb-2">Contacts Notified</h3>
-        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-          <li v-for="contact in alert?.contactsNotifiedDetails" :key="contact.id" class="py-3 flex justify-between">
-            <div>
-              <p class="text-sm font-medium">{{ contact.name }}</p>
-              <p class="text-xs text-gray-500">{{ contact.phone }}</p>
-            </div>
-            <div class="text-right">
-              <span :class="contactStatusClass(contact.notificationStatus)">{{ contact.notificationStatus }}</span>
-              <p v-if="contact.verifiedAt" class="text-xs text-green-600">Verified at {{ formatTime(contact.verifiedAt) }}</p>
+    <!-- Timeline + Admin form -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+        <ClockIcon class="h-4 w-4 text-sky-500" />
+        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Response Timeline</h3>
+      </div>
+      <div class="p-6">
+        <ol class="relative border-l-2 border-slate-200 dark:border-slate-700 space-y-0">
+          <li v-for="(event, i) in timelineEvents" :key="event.id" class="ml-6 pb-8 last:pb-0">
+            <!-- Connector dot -->
+            <span :class="['absolute -left-[9px] flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-white dark:ring-slate-800', event.iconBg]">
+              <component :is="event.icon" class="h-2.5 w-2.5 text-white" />
+            </span>
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ event.content }}</p>
+                <p v-if="event.detail" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 capitalize">{{ event.detail }}</p>
+              </div>
+              <time class="shrink-0 text-xs font-mono text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700/60 px-2 py-1 rounded-lg">
+                {{ event.time }}
+              </time>
             </div>
           </li>
-        </ul>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <h3 class="text-md font-medium mb-2">Verification Links</h3>
-        <p class="text-sm text-gray-500 mb-2">Each contact receives a unique verification link in SMS/email.</p>
-        <div class="space-y-2">
-          <div v-for="link in verificationLinks" :key="link.contactId" class="flex items-center justify-between">
-            <span class="text-sm truncate">{{ link.url }}</span>
-            <button @click="copyLink(link.url)" class="text-primary-600 hover:text-primary-800">
-              <ClipboardIcon class="h-4 w-4" />
+        </ol>
+
+        <!-- Admin response time update -->
+        <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
+          <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-4">Update Response Times</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+            <div>
+              <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Agency Notified At</label>
+              <input
+                v-model="responseForm.agencyNotifiedAt"
+                type="datetime-local"
+                class="block w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Agency Arrived At</label>
+              <input
+                v-model="responseForm.agencyArrivedAt"
+                type="datetime-local"
+                class="block w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              />
+            </div>
+            <button
+              @click="updateResponseTimes"
+              class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/20 transition-all"
+            >
+              <CheckIcon class="h-4 w-4" />
+              Save Times
             </button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Contacts + Verification -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Contacts notified -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+          <UsersIcon class="h-4 w-4 text-sky-500" />
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Contacts Notified</h3>
+          <span class="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full font-medium ml-auto">
+            {{ alert?.contactsNotifiedDetails?.length ?? 0 }}
+          </span>
+        </div>
+        <ul class="divide-y divide-slate-100 dark:divide-slate-700/60">
+          <li
+            v-for="contact in alert?.contactsNotifiedDetails"
+            :key="contact.id"
+            class="px-5 py-3.5 flex items-center justify-between"
+          >
+            <div class="flex items-center gap-2.5">
+              <div class="h-7 w-7 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-300 shrink-0">
+                {{ getInitials(contact.name) }}
+              </div>
+              <div>
+                <p class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ contact.name }}</p>
+                <p class="text-xs text-slate-400">{{ contact.phone }}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span :class="contactStatusClass(contact.notificationStatus)">{{ contact.notificationStatus }}</span>
+              <p v-if="contact.verifiedAt" class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
+                ✓ Verified {{ formatTime(contact.verifiedAt) }}
+              </p>
+            </div>
+          </li>
+          <li v-if="!alert?.contactsNotifiedDetails?.length" class="px-5 py-10 text-center text-sm text-slate-400">
+            No contacts notified
+          </li>
+        </ul>
+      </div>
+
+      <!-- Verification links -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+          <ShieldCheckIcon class="h-4 w-4 text-sky-500" />
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Verification Links</h3>
+        </div>
+        <div class="p-5">
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Each contact receives a unique link to verify the alert was triggered by their known user.</p>
+          <div class="space-y-2.5">
+            <div
+              v-for="link in verificationLinks"
+              :key="link.contactId"
+              class="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-700/60 rounded-xl border border-slate-200/80 dark:border-slate-600/60"
+            >
+              <LinkIcon class="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <span class="text-xs text-slate-600 dark:text-slate-400 truncate flex-1 font-mono">{{ link.url }}</span>
+              <button
+                @click="copyLink(link.url)"
+                class="flex-shrink-0 p-1 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors"
+                title="Copy link"
+              >
+                <ClipboardIcon class="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div v-if="!verificationLinks.length" class="text-sm text-slate-400 text-center py-6">
+              No verification links available
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { format, formatDistanceToNow, differenceInSeconds } from 'date-fns'
-import { 
-  ArrowLeftIcon, ExclamationTriangleIcon, CheckCircleIcon,
-  ClockIcon, MapPinIcon, PhoneIcon, EnvelopeIcon, ClipboardIcon
+import {
+  ArrowLeftIcon, ExclamationTriangleIcon, CheckCircleIcon, CheckIcon,
+  ClockIcon, MapPinIcon, PhoneIcon, EnvelopeIcon, ClipboardIcon,
+  ArrowRightIcon, UserCircleIcon, UsersIcon, LinkIcon, ShieldCheckIcon,
+  FireIcon, HeartIcon, BoltIcon
 } from '@heroicons/vue/24/outline'
 import AlertDetailMap from '~/components/admin/AlertMap.vue'
-import { useAlertsStore } from '~/stores/alerts'
 import type { Alert } from '~/types'
 
-definePageMeta({ layout: 'admin'})
+definePageMeta({ layout: 'admin' })
 
 const route = useRoute()
-const alertsStore = useAlertsStore()
 const alertId = route.params.id as string
-
 const { data: alert, refresh } = await useApi<Alert>(`/alerts/${alertId}`)
 
 const responseForm = reactive({
@@ -173,126 +281,101 @@ const responseForm = reactive({
   agencyArrivedAt: alert.value?.agencyArrivedAt?.slice(0, 16) || ''
 })
 
+// --- Computed ---
 const elapsedTime = computed(() => {
   if (!alert.value?.createdAt) return 'N/A'
-  const seconds = differenceInSeconds(new Date(), new Date(alert.value.createdAt))
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}m ${secs}s`
+  const s = differenceInSeconds(new Date(), new Date(alert.value.createdAt))
+  return `${Math.floor(s / 60)}m ${s % 60}s`
 })
 
 const timelineEvents = computed(() => {
   if (!alert.value) return []
-  const events = [
-    {
-      id: 'created',
-      icon: ExclamationTriangleIcon,
-      iconBg: 'bg-red-500',
-      content: 'Alert triggered by user',
-      detail: alert.value.type,
-      datetime: alert.value.createdAt,
-      time: format(new Date(alert.value.createdAt), 'HH:mm:ss')
-    }
+  const events: any[] = [
+    { id: 'created', icon: ExclamationTriangleIcon, iconBg: 'bg-red-500',
+      content: 'Alert triggered by user', detail: alert.value.type,
+      time: format(new Date(alert.value.createdAt), 'HH:mm:ss') }
   ]
-  if (alert.value.agencyNotifiedAt) {
-    events.push({
-      id: 'notified',
-      icon: PhoneIcon,
-      iconBg: 'bg-blue-500',
-      content: 'Emergency contacts notified',
-      datetime: alert.value.agencyNotifiedAt,
-      time: format(new Date(alert.value.agencyNotifiedAt), 'HH:mm:ss')
-    })
-  }
-  if (alert.value.agencyArrivedAt) {
-    events.push({
-      id: 'arrived',
-      icon: MapPinIcon,
-      iconBg: 'bg-green-500',
-      content: 'Agency arrived at scene',
-      datetime: alert.value.agencyArrivedAt,
-      time: format(new Date(alert.value.agencyArrivedAt), 'HH:mm:ss')
-    })
-  }
-  if (alert.value.status === 'resolved') {
-    events.push({
-      id: 'resolved',
-      icon: CheckCircleIcon,
-      iconBg: 'bg-green-600',
-      content: 'Alert marked as resolved',
-      datetime: alert.value.resolvedAt,
-      time: alert.value.resolvedAt ? format(new Date(alert.value.resolvedAt), 'HH:mm:ss') : 'N/A'
-    })
-  }
+  if (alert.value.agencyNotifiedAt) events.push({
+    id: 'notified', icon: PhoneIcon, iconBg: 'bg-sky-500',
+    content: 'Emergency contacts notified via call, SMS & email',
+    time: format(new Date(alert.value.agencyNotifiedAt), 'HH:mm:ss')
+  })
+  if (alert.value.agencyArrivedAt) events.push({
+    id: 'arrived', icon: MapPinIcon, iconBg: 'bg-emerald-500',
+    content: 'Agency arrived at incident location',
+    time: format(new Date(alert.value.agencyArrivedAt), 'HH:mm:ss')
+  })
+  if (alert.value.status === 'resolved') events.push({
+    id: 'resolved', icon: CheckCircleIcon, iconBg: 'bg-emerald-600',
+    content: 'Alert marked as resolved',
+    time: alert.value.resolvedAt ? format(new Date(alert.value.resolvedAt), 'HH:mm:ss') : 'N/A'
+  })
   return events
 })
 
-const verificationLinks = computed(() => {
-  return alert.value?.contactsNotifiedDetails?.map((c: any) => ({
+const verificationLinks = computed(() =>
+  alert.value?.contactsNotifiedDetails?.map((c: any) => ({
     contactId: c.id,
-    url: `${window.location.origin}/verify/${alert.value.id}/${c.token}`
+    url: `${typeof window !== 'undefined' ? window.location.origin : ''}/verify/${alertId}/${c.token}`
   })) || []
-})
+)
 
-// Status badge helpers
-const statusBadgeClass = (status?: string) => {
-  const base = 'px-2 py-1 text-xs font-medium rounded-full'
-  switch (status) {
-    case 'active': return `${base} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200`
-    case 'resolved': return `${base} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`
-    case 'false_alarm': return `${base} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300`
-    default: return `${base} bg-gray-100 text-gray-800`
-  }
+// --- Helpers ---
+const getInitials = (name?: string) => {
+  if (!name) return '?'
+  const p = name.split(' ')
+  return p.length > 1 ? p[0][0] + p[1][0] : name.slice(0, 2).toUpperCase()
 }
 
-const alertTypeBadgeClass = (type?: string) => {
-  const classes: Record<string, string> = {
-    robbery: 'text-red-600 dark:text-red-400',
-    health: 'text-green-600 dark:text-green-400',
-    fire: 'text-orange-600 dark:text-orange-400',
-    flood: 'text-blue-600 dark:text-blue-400',
-    violence: 'text-purple-600 dark:text-purple-400'
-  }
-  return classes[type || ''] || 'text-gray-600'
+const typeConfig: Record<string, { pill: string; dot: string; bg: string; color: string }> = {
+  robbery:  { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500', bg: 'bg-red-100 dark:bg-red-500/15', color: 'text-red-600 dark:text-red-400' },
+  health:   { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/15', color: 'text-emerald-600 dark:text-emerald-400' },
+  fire:     { pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/15', color: 'text-orange-600 dark:text-orange-400' },
+  flood:    { pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/15', color: 'text-blue-600 dark:text-blue-400' },
+  violence: { pill: 'text-purple-700 bg-purple-50 dark:text-purple-300 dark:bg-purple-500/10', dot: 'bg-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/15', color: 'text-purple-600 dark:text-purple-400' },
 }
+const typeBadgeClass = (t?: string) =>
+  `inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${typeConfig[t || '']?.pill ?? 'text-slate-600 bg-slate-100'}`
+const typeIconBg = (t?: string) => typeConfig[t || '']?.bg ?? 'bg-slate-100 dark:bg-slate-700'
+const typeIconColor = (t?: string) => typeConfig[t || '']?.color ?? 'text-slate-500'
+const typeIcon = (t?: string) => ({ fire: FireIcon, health: HeartIcon, robbery: BoltIcon }[t || ''] || ExclamationTriangleIcon)
+
+const statusConfig: Record<string, { pill: string; dot: string; label: string }> = {
+  active:      { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500', label: 'Active' },
+  resolved:    { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500', label: 'Resolved' },
+  false_alarm: { pill: 'text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-700', dot: 'bg-slate-400', label: 'False Alarm' },
+}
+const statusBadgeClass = (s?: string) =>
+  `inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${statusConfig[s || '']?.pill ?? 'text-slate-600 bg-slate-100'}`
+const statusDotClass = (s?: string) => statusConfig[s || '']?.dot ?? 'bg-slate-400'
+const statusLabel = (s?: string) => statusConfig[s || '']?.label ?? s
 
 const contactStatusClass = (status: string) => {
-  const base = 'px-2 py-1 text-xs font-medium rounded-full'
-  switch (status) {
-    case 'delivered': return `${base} bg-blue-100 text-blue-800`
-    case 'read': return `${base} bg-green-100 text-green-800`
-    case 'failed': return `${base} bg-red-100 text-red-800`
-    default: return `${base} bg-gray-100 text-gray-800`
+  const base = 'inline-flex items-center px-2 py-0.5 text-[10.5px] font-semibold rounded-full'
+  const map: Record<string, string> = {
+    delivered: `${base} bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300`,
+    read:      `${base} bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300`,
+    failed:    `${base} bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300`,
   }
+  return map[status] ?? `${base} bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300`
 }
 
-const formatDateTime = (date: string) => {
-  return format(new Date(date), 'MMM d, yyyy HH:mm:ss')
-}
+const formatDateTime = (d: string) => format(new Date(d), 'MMM d, yyyy HH:mm:ss')
+const formatTime = (d: string) => format(new Date(d), 'HH:mm')
 
-const formatTime = (date: string) => format(new Date(date), 'HH:mm')
-
-const copyLink = (text: string) => {
-  navigator.clipboard.writeText(text)
-  // Show toast notification
-}
+const copyLink = (text: string) => navigator.clipboard.writeText(text)
 
 const updateResponseTimes = async () => {
   await useApi(`/alerts/${alertId}/response`, {
     method: 'PATCH',
-    body: {
-      agencyNotifiedAt: responseForm.agencyNotifiedAt,
-      agencyArrivedAt: responseForm.agencyArrivedAt
-    }
+    body: { agencyNotifiedAt: responseForm.agencyNotifiedAt, agencyArrivedAt: responseForm.agencyArrivedAt }
   })
   refresh()
 }
-
 const markAsFalseAlarm = async () => {
   await useApi(`/alerts/${alertId}/status`, { method: 'PATCH', body: { status: 'false_alarm' } })
   refresh()
 }
-
 const resolveAlert = async () => {
   await useApi(`/alerts/${alertId}/status`, { method: 'PATCH', body: { status: 'resolved' } })
   refresh()

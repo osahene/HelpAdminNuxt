@@ -1,74 +1,89 @@
 <template>
-  <header class="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-    <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+  <header class="shrink-0 bg-white dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 shadow-sm z-30">
+    <div class="flex items-center justify-between h-16 px-4 sm:px-6">
+
       <!-- Mobile menu button -->
       <button
         type="button"
-        class="md:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+        class="md:hidden p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
         @click="emit('toggle-sidebar')"
       >
         <span class="sr-only">Open sidebar</span>
-        <Bars3Icon class="h-6 w-6" />
+        <Bars3Icon class="h-5 w-5" />
       </button>
 
-      <!-- Search bar -->
-      <div class="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-end">
-        <div class="max-w-lg w-full lg:max-w-xs">
-          <label for="search" class="sr-only">Search</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              id="search"
-              v-model="searchQuery"
-              class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-              placeholder="Search users, alerts..."
-              type="search"
-              @keyup.enter="performSearch"
-            />
-          </div>
+      <!-- Page title (desktop) -->
+      <div class="hidden md:block">
+        <div class="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
+          <span>Help OO Help</span>
+          <ChevronRightIcon class="h-3.5 w-3.5" />
+          <span class="text-slate-700 dark:text-slate-200 font-medium capitalize">{{ currentPage }}</span>
         </div>
       </div>
 
-      <!-- Right side icons and dropdown -->
-      <div class="flex items-center ml-4 md:ml-6 space-x-3">
-        <!-- Notifications -->
-        <button
-          type="button"
-          class="p-1 rounded-full text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 relative"
-        >
-          <span class="sr-only">View notifications</span>
-          <BellIcon class="h-6 w-6" />
-          <span
-            v-if="unreadNotifications > 0"
-            class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"
+      <!-- Search bar -->
+      <div class="flex-1 flex justify-center md:justify-end px-4 md:px-0 md:ml-6 md:max-w-xs lg:max-w-sm">
+        <div class="w-full relative group">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon class="h-4 w-4 text-slate-400 group-focus-within:text-sky-500 transition-colors" />
+          </div>
+          <input
+            v-model="searchQuery"
+            class="block w-full pl-9 pr-4 py-2 text-sm bg-slate-100 dark:bg-slate-700/60 border border-transparent rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-700 focus:border-sky-300 dark:focus:border-sky-600 focus:ring-1 focus:ring-sky-300 dark:focus:ring-sky-700 transition-all"
+            placeholder="Search users, alerts…"
+            type="search"
+            @keyup.enter="performSearch"
           />
-        </button>
+          <kbd class="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 text-[10px] text-slate-400 bg-slate-200 dark:bg-slate-600 px-1.5 py-0.5 rounded font-mono">
+            ⌘K
+          </kbd>
+        </div>
+      </div>
+
+      <!-- Right actions -->
+      <div class="flex items-center gap-1 ml-4">
 
         <!-- Dark mode toggle -->
         <button
           type="button"
-          class="p-1 rounded-full text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          class="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           @click="toggleDarkMode"
+          :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
         >
-          <span class="sr-only">Toggle dark mode</span>
-          <SunIcon v-if="isDark" class="h-6 w-6" />
-          <MoonIcon v-else class="h-6 w-6" />
+          <SunIcon v-if="isDark" class="h-5 w-5" />
+          <MoonIcon v-else class="h-5 w-5" />
         </button>
+
+        <!-- Notifications -->
+        <button
+          type="button"
+          class="relative p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+        >
+          <span class="sr-only">Notifications</span>
+          <BellIcon class="h-5 w-5" />
+          <span
+            v-if="unreadNotifications > 0"
+            class="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-slate-800"
+          >
+            {{ unreadNotifications > 9 ? '9+' : unreadNotifications }}
+          </span>
+        </button>
+
+        <!-- Divider -->
+        <div class="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
         <!-- Profile dropdown -->
         <Menu as="div" class="relative">
-          <div>
-            <MenuButton
-              class="max-w-xs bg-white dark:bg-gray-800 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-            >
-              <span class="sr-only">Open user menu</span>
-              <div class="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium">
-                {{ userInitials }}
-              </div>
-            </MenuButton>
-          </div>
+          <MenuButton class="flex items-center gap-2.5 pl-1 pr-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
+            <div class="h-7 w-7 rounded-full bg-linear-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow shrink-0">
+              {{ userInitials }}
+            </div>
+            <span class="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-200 max-w-[120px] truncate">
+              {{ user?.name || 'Admin' }}
+            </span>
+            <ChevronDownIcon class="hidden sm:block h-3.5 w-3.5 text-slate-400" />
+          </MenuButton>
+
           <transition
             enter-active-class="transition ease-out duration-100"
             enter-from-class="transform opacity-0 scale-95"
@@ -77,25 +92,44 @@
             leave-from-class="transform opacity-100 scale-100"
             leave-to-class="transform opacity-0 scale-95"
           >
-            <MenuItems
-              class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
-            >
+            <MenuItems class="absolute right-0 mt-2 w-52 origin-top-right rounded-xl bg-white dark:bg-slate-800 shadow-lg ring-1 ring-slate-200/80 dark:ring-slate-700 py-1 focus:outline-none z-50">
+              <!-- User info -->
+              <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+                <p class="text-xs text-slate-500 dark:text-slate-400">Signed in as</p>
+                <p class="text-sm font-semibold text-slate-800 dark:text-white truncate mt-0.5">{{ user?.email || 'admin@safelink.com' }}</p>
+              </div>
+
               <MenuItem v-slot="{ active }">
                 <NuxtLink
                   to="/settings"
-                  :class="[active ? 'bg-gray-100 dark:bg-gray-700' : '', 'block px-4 py-2 text-sm text-gray-700 dark:text-gray-200']"
+                  :class="['flex items-center gap-2.5 px-4 py-2 text-sm transition-colors mt-1', active ? 'text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-700' : 'text-slate-600 dark:text-slate-300']"
                 >
+                  <CogIcon class="h-4 w-4 shrink-0" />
                   Settings
                 </NuxtLink>
               </MenuItem>
+
               <MenuItem v-slot="{ active }">
-                <button
-                  @click="logout"
-                  :class="[active ? 'bg-gray-100 dark:bg-gray-700' : '', 'block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200']"
+                <NuxtLink
+                  to="/profile"
+                  :class="['flex items-center gap-2.5 px-4 py-2 text-sm transition-colors', active ? 'text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-700' : 'text-slate-600 dark:text-slate-300']"
                 >
-                  Sign out
-                </button>
+                  <UserCircleIcon class="h-4 w-4 shrink-0" />
+                  Your Profile
+                </NuxtLink>
               </MenuItem>
+
+              <div class="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
+                <MenuItem v-slot="{ active }">
+                  <button
+                    @click="logout"
+                    :class="['w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors', active ? 'text-red-600 bg-red-50 dark:bg-red-500/10' : 'text-slate-600 dark:text-slate-300']"
+                  >
+                    <ArrowRightOnRectangleIcon class="h-4 w-4 shrink-0" />
+                    Sign out
+                  </button>
+                </MenuItem>
+              </div>
             </MenuItems>
           </transition>
         </Menu>
@@ -106,7 +140,11 @@
 
 <script setup lang="ts">
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
-import { Bars3Icon, MagnifyingGlassIcon, BellIcon, SunIcon, MoonIcon } from '@heroicons/vue/24/outline'
+import {
+  Bars3Icon, MagnifyingGlassIcon, BellIcon, SunIcon, MoonIcon,
+  ChevronRightIcon, ChevronDownIcon, CogIcon, UserCircleIcon,
+  ArrowRightOnRectangleIcon
+} from '@heroicons/vue/24/outline'
 import { useAuth } from '~/composables/useAuth'
 import { useDarkMode } from '~/composables/useDarkMode'
 
@@ -114,10 +152,17 @@ const emit = defineEmits<{
   (e: 'toggle-sidebar'): void
 }>()
 
+const route = useRoute()
 const { user, logout } = useAuth()
 const { isDark, toggle: toggleDarkMode } = useDarkMode()
+
 const searchQuery = ref('')
-const unreadNotifications = ref(3) // Example - replace with real data
+const unreadNotifications = ref(3)
+
+const currentPage = computed(() => {
+  const parts = route.path.split('/').filter(Boolean)
+  return parts[0] || 'dashboard'
+})
 
 const userInitials = computed(() => {
   if (!user.value?.name) return 'A'
