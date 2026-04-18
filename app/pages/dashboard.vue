@@ -1,24 +1,21 @@
 <template>
   <div class="space-y-6">
-
-    <!-- Page header -->
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
         <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          {{ today }} · Real-time overview of all system activity
+          {{ today }} | Real-time overview of all system activity
         </p>
       </div>
       <button
-        @click="analyticsStore.fetchDashboardData()"
         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/20 transition-all active:scale-95"
+        @click="analyticsStore.fetchDashboardData()"
       >
         <ArrowPathIcon class="h-4 w-4" />
         Refresh
       </button>
     </div>
 
-    <!-- ===== STATS GRID ===== -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatsCard
         title="Active Alerts"
@@ -62,9 +59,7 @@
       />
     </div>
 
-    <!-- ===== MAP & ALERTS BY TYPE ===== -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <!-- Map card -->
       <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 overflow-hidden">
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
           <div class="flex items-center gap-2">
@@ -78,7 +73,7 @@
               Live
             </span>
           </div>
-          <button @click="refreshMap" class="text-xs text-sky-600 hover:text-sky-700 dark:text-sky-400 font-medium flex items-center gap-1 transition-colors">
+          <button class="text-xs text-sky-600 hover:text-sky-700 dark:text-sky-400 font-medium flex items-center gap-1 transition-colors" @click="refreshMap">
             <ArrowPathIcon class="h-3.5 w-3.5" /> Refresh
           </button>
         </div>
@@ -89,7 +84,6 @@
         </div>
       </div>
 
-      <!-- Alerts by type -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
           <div class="flex items-center gap-2">
@@ -104,7 +98,6 @@
       </div>
     </div>
 
-    <!-- ===== TREND CHARTS ===== -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
@@ -132,9 +125,7 @@
       </div>
     </div>
 
-    <!-- ===== RECENT ALERTS TABLE ===== -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 overflow-hidden">
-      <!-- Table header -->
       <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
         <div class="flex items-center gap-2">
           <BellAlertIcon class="h-4 w-4 text-red-500" />
@@ -144,11 +135,10 @@
           </span>
         </div>
         <NuxtLink to="/alerts" class="text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 transition-colors">
-          View all →
+          View all ->
         </NuxtLink>
       </div>
 
-      <!-- Table -->
       <div class="overflow-x-auto">
         <table class="min-w-full">
           <thead>
@@ -167,7 +157,6 @@
               :key="alert.id"
               class="group hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors"
             >
-              <!-- User -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex items-center gap-2.5">
                   <div class="h-7 w-7 rounded-full bg-linear-to-br from-slate-300 to-slate-400 dark:from-slate-600 dark:to-slate-500 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
@@ -177,7 +166,6 @@
                 </div>
               </td>
 
-              <!-- Type badge -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <span :class="alertTypeBadgeClass(alert.type)">
                   <span :class="alertTypeDotClass(alert.type)" class="inline-block h-1.5 w-1.5 rounded-full mr-1.5"></span>
@@ -185,7 +173,6 @@
                 </span>
               </td>
 
-              <!-- Location -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <div class="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                   <MapPinIcon class="h-3.5 w-3.5 shrink-0 text-slate-400" />
@@ -193,12 +180,10 @@
                 </div>
               </td>
 
-              <!-- Time -->
               <td class="px-5 py-3.5 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                 {{ formatDistanceToNow(new Date(alert.createdAt)) }} ago
               </td>
 
-              <!-- Status -->
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <span
                   class="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full"
@@ -214,7 +199,6 @@
                 </span>
               </td>
 
-              <!-- Action -->
               <td class="px-5 py-3.5 whitespace-nowrap text-right">
                 <NuxtLink
                   :to="`/alerts/${alert.id}`"
@@ -226,7 +210,6 @@
               </td>
             </tr>
 
-            <!-- Empty state -->
             <tr v-if="!recentAlerts?.length">
               <td colspan="6" class="px-5 py-12 text-center">
                 <BellAlertIcon class="h-8 w-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
@@ -249,6 +232,10 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useAnalyticsStore } from '~/stores/analytics'
 import { useRealtime } from '~/composables/useRealtime'
+import AlertMap from '~/components/admin/AlertMap.vue'
+import AlertsByTypeChart from '~/components/admin/Charts/AlertsByType.vue'
+import ResponseTimeChart from '~/components/admin/Charts/ResponseTimeChart.vue'
+import UserGrowthChart from '~/components/admin/Charts/UserGrowthChart.vue'
 import StatsCard from '~/components/admin/StatsCard.vue'
 import type { Alert } from '~/types'
 
@@ -271,6 +258,7 @@ const responseTimeTrendString = computed(() => {
   if (!trend || trend.length < 2) return '0%'
   const last = trend[trend.length - 1].value
   const prev = trend[trend.length - 2].value
+  if (!prev) return '0%'
   const diff = ((last - prev) / prev) * 100
   return `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%`
 })
@@ -286,15 +274,17 @@ const coverageTrendString = computed(() => `${coverageTrend.value > 0 ? '+' : ''
 
 const getInitials = (name?: string) => {
   if (!name) return '?'
-  const parts = name.split(' ')
-  return parts.length > 1 ? parts[0][0] + parts[1][0] : name.slice(0, 2).toUpperCase()
+  const parts = name.trim().split(/\s+/)
+  return parts.length > 1
+    ? `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase()
+    : name.slice(0, 2).toUpperCase()
 }
 
 const alertTypeConfig: Record<string, { pill: string; dot: string }> = {
-  robbery:  { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500' },
-  health:   { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
-  fire:     { pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500' },
-  flood:    { pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500' },
+  robbery: { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500' },
+  health: { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
+  fire: { pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500' },
+  flood: { pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500' },
   violence: { pill: 'text-purple-700 bg-purple-50 dark:text-purple-300 dark:bg-purple-500/10', dot: 'bg-purple-500' },
 }
 

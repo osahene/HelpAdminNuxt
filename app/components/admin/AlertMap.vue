@@ -2,9 +2,9 @@
   <div ref="mapContainer" class="h-full w-full rounded-lg"></div>
 </template>
 
+
 <script setup lang="ts">
-import L from 'leaflet'
-import 'leaflet.markercluster'
+import * as L from 'leaflet'
 import type { Alert } from '~/types'
 
 const props = defineProps<{
@@ -62,7 +62,6 @@ const updateMarkers = () => {
 
   markerClusterGroup.addLayers(markers)
 
-  // Fit bounds if markers exist
   if (markers.length > 0) {
     const group = new L.FeatureGroup(markers)
     map.fitBounds(group.getBounds().pad(0.5))
@@ -82,9 +81,10 @@ const getAlertColor = (type: string): string => {
 
 watch(() => props.alerts, updateMarkers, { deep: true })
 
-onMounted(() => {
-  // Leaflet requires window, so we initialize on client only
+onMounted(async () => {
   if (process.client) {
+    // This ensures the plugin is only imported in the browser!
+    await import('leaflet.markercluster')
     initMap()
   }
 })
@@ -96,7 +96,6 @@ onUnmounted(() => {
   }
 })
 </script>
-
 <style>
 @import 'leaflet.markercluster/dist/MarkerCluster.css';
 @import 'leaflet.markercluster/dist/MarkerCluster.Default.css';

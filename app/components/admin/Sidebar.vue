@@ -4,7 +4,6 @@
     class="sidebar-link group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150"
     :class="isActive ? 'sidebar-link--active' : 'sidebar-link--idle'"
   >
-    <!-- Icon -->
     <component
       :is="resolvedIcon"
       class="h-4.5 w-4.5 shrink-0 transition-colors"
@@ -12,7 +11,6 @@
       style="height: 18px; width: 18px;"
     />
 
-    <!-- Label (and optional slot for badge) -->
     <span
       class="flex-1 flex items-center transition-colors"
       :class="isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'"
@@ -20,8 +18,7 @@
       {{ slotLabel }}
     </span>
 
-    <!-- Default slot (e.g. badges) -->
-    <slot />
+    <slot name="badge" />
   </NuxtLink>
 </template>
 
@@ -33,16 +30,17 @@ const props = defineProps<{
   icon: keyof typeof HeroIcons
 }>()
 
-// Support child text nodes for label
 const slots = useSlots()
 const slotLabel = computed(() => {
   const defaultSlot = slots.default?.()
   if (!defaultSlot) return ''
-  const firstNode = defaultSlot[0]
-  // If slot has only text, use it; otherwise the label comes from the route
-  if (typeof firstNode?.children === 'string') {
-    return firstNode.children
-  }
+  const text = defaultSlot
+    .map((node) => typeof node.children === 'string' ? node.children : '')
+    .join('')
+    .trim()
+
+  if (text) return text
+
   const parts = props.to.split('/').filter(Boolean)
   return parts.length ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : 'Home'
 })
@@ -50,7 +48,10 @@ const slotLabel = computed(() => {
 const resolvedIcon = computed(() => HeroIcons[props.icon])
 
 const route = useRoute()
-const isActive = computed(() => route.path === props.to || route.path.startsWith(props.to + '/'))
+const isActive = computed(() => {
+  if (props.to === '/') return route.path === props.to
+  return route.path === props.to || route.path.startsWith(props.to + '/')
+})
 </script>
 
 <style scoped>

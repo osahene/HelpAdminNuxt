@@ -5,20 +5,24 @@ interface User {
   id: string
   name: string
   email: string
-  role: 'admin' | 'moderator'
+  role: 'super_admin' | 'admin' | 'moderator' | 'analyst'
+ emailVerified: boolean
+  authorised: boolean
 }
 
 interface AuthState {
   user: User | null
   token: string | null
   loading: boolean
+  isHydrated: boolean
 }
 
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     user: null,
     token: null,
-    loading: false
+    loading: false,
+    isHydrated: false
   }),
 
   getters: {
@@ -27,7 +31,55 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    async login(credentials: { email: string; password: string }) {
+       // ── Registration ──────────────────────────────────────────────────────────
+    async register(payload: {
+      firstName: string
+      lastName: string
+      name: string
+      role: string
+      email: string
+      password: string
+    }) {
+      const { data } = await useApi<{ message: string }>('/auth/register', {
+        method: 'POST',
+        body: payload,
+      })
+      // API sends a 6-digit code to the email — no token yet
+      return data.value
+    },
+
+    // ── Email verification ────────────────────────────────────────────────────
+    async verifyEmail(payload: { email: string; code: string }) {
+      const { data } = await useApi<{ message: string }>('/auth/verify-email', {
+        method: 'POST',
+        body: payload,
+      })
+      return data.value
+    },
+
+    async resendEmailVerification(email: string) {
+      await useApi('/auth/resend-verification', {
+        method: 'POST',
+        body: { email },
+      })
+    },
+
+    // ── Admin authorization PIN ───────────────────────────────────────────────
+    async verifyAuthPin(payload: { email: string; pin: string }) {
+      const { data } = await useApi<{ message: string }>('/auth/verify-pin', {
+        method: 'POST',
+        body: payload,
+      })
+      return data.value
+    },
+
+    async resendAuthPin(email: string) {
+      await useApi('/auth/resend-pin', {
+        method: 'POST',
+        body: { email },
+      })
+    },
+    async login(credentials: { email: string; password: string, remember: boolean }) {
       this.loading = true
       try {
         const { data, error } = await useFetch('/api/admin/login', {
@@ -48,6 +100,31 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
+
+      // ── Restore session on page load ──────────────────────────────────────────
+    async fetchUser() {
+      // Restore token from cookie if not already in memory
+      if (!this.token) {
+        const tokenCookie = useCookie<string | null>('safelink_token')
+        this.token = tokenCookie.value ?? null
+      }
+
+      if (!this.token) {
+        this.isHydrated = true
+        return
+      }
+
+      try {
+        const { data } = await useApi<User>('/auth/me')
+        this.user = data.value ?? null
+      } catch {
+        // Token is invalid / expired — clear it
+        this.clearAuth()
+      } finally {
+        this.isHydrated = true
+      }
+    },
+
 
     logout() {
       this.token = null
@@ -72,6 +149,13 @@ export const useAuthStore = defineStore('auth', {
           }
         }
       }
-    }
+    },
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    clearAuth() {
+      this.user = null
+      this.token = null
+      const tokenCookie = useCookie('safelink_token')
+      tokenCookie.value = null
+    },
   }
 })

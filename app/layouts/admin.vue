@@ -27,8 +27,10 @@
           <SidebarLink to="/users" icon="UsersIcon">Users</SidebarLink>
           <SidebarLink to="/contacts" icon="PhoneIcon">Contacts</SidebarLink>
           <SidebarLink to="/alerts" icon="BellAlertIcon">
-            <span class="flex-1">Alerts</span>
-            <span class="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white">3</span>
+            Alerts
+            <template #badge>
+              <span class="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white">3</span>
+            </template>
           </SidebarLink>
 
           <div class="px-2 pt-5 pb-2">
@@ -186,26 +188,3 @@ useHead({
   ]
 })
 </script>
-
-<style>
-/* Global font override for admin */
-.safelink-sidebar {
-  background: #0d1420;
-  background-image:
-    radial-gradient(ellipse at 20% 0%, rgba(14, 165, 233, 0.07) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
-}
-
-.safelink-sidebar-brand {
-  background: rgba(14, 165, 233, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-body, .admin-font {
-  font-family: 'Outfit', system-ui, sans-serif;
-}
-
-.stat-value {
-  font-family: 'JetBrains Mono', monospace;
-}
-</style>

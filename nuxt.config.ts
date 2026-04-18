@@ -5,6 +5,7 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/ui',
     '@pinia/nuxt',
+    '@nuxtjs/leaflet',
   ],
    css: ['~/assets/css/main.css'],
 

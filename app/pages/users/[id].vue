@@ -164,6 +164,7 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon, BellAlertIcon } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
+import { useApi } from '~/composables/useApi'
 import type { User, Alert, Contact } from '~/types'
 
 definePageMeta({ layout: 'admin' })
@@ -194,8 +195,10 @@ const alertColumns = [
 
 const getInitials = (name?: string) => {
   if (!name) return '?'
-  const p = name.split(' ')
-  return p.length > 1 ? p[0][0] + p[1][0] : name.slice(0, 2).toUpperCase()
+  const parts = name.trim().split(/\s+/)
+  return parts.length > 1
+    ? `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase()
+    : name.slice(0, 2).toUpperCase()
 }
 
 const contactStatusBadge = (s: string) => {

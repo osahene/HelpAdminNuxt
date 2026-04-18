@@ -1,204 +1,384 @@
 <template>
-  <div class="max-w-4xl mx-auto space-y-8">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-
-    <!-- Tabs -->
-    <div class="border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex space-x-8">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          :class="[
-            activeTab === tab.id
-              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300',
-            'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
-          ]"
-        >
-          {{ tab.name }}
-        </button>
-      </nav>
+  <div class="max-w-3xl mx-auto space-y-5">
+    <div>
+      <h1 class="text-xl font-bold text-slate-900 dark:text-white">Settings</h1>
+      <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Manage system configuration and preferences</p>
     </div>
 
-    <!-- General Settings -->
-    <div v-if="activeTab === 'general'" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-      <form @submit.prevent="saveGeneralSettings">
-        <div class="space-y-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">System Name</label>
-            <input v-model="general.systemName" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+    <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-1.5 flex gap-1 overflow-x-auto">
+      <button
+        v-for="tab in tabs"
+        :key="tab.id"
+        @click="activeTab = tab.id"
+        :class="[
+          'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all',
+          activeTab === tab.id
+            ? 'bg-sky-500 text-white shadow-sm shadow-sky-500/20'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60'
+        ]"
+      >
+        <component :is="tab.icon" class="h-4 w-4 shrink-0" />
+        {{ tab.name }}
+      </button>
+    </div>
+
+    <div v-if="activeTab === 'general'" class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+        <h2 class="text-sm font-semibold text-slate-900 dark:text-white">General Settings</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Core system configuration</p>
+      </div>
+      <form class="divide-y divide-slate-100 dark:divide-slate-700" @submit.prevent="saveGeneralSettings">
+        <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div class="sm:w-60 shrink-0">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">System Name</label>
+            <p class="text-xs text-slate-400 mt-0.5">Displayed in emails and notifications</p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Default Response Time Target (minutes)</label>
-            <input v-model.number="general.targetResponseMinutes" type="number" min="1" class="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+          <input
+            v-model="general.systemName"
+            type="text"
+            class="flex-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 transition-all"
+          />
+        </div>
+
+        <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div class="sm:w-60 shrink-0">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Response Time Target</label>
+            <p class="text-xs text-slate-400 mt-0.5">Minutes until agency should respond</p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Max Contacts per User</label>
-            <input v-model.number="general.maxContacts" type="number" min="1" max="10" class="mt-1 block w-32 rounded-md border-gray-300 shadow-sm" />
+          <div class="flex items-center gap-2">
+            <input
+              v-model.number="general.targetResponseMinutes"
+              type="number"
+              min="1"
+              class="w-24 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400 font-mono"
+            />
+            <span class="text-sm text-slate-400">minutes</span>
           </div>
-          <div>
-            <label class="inline-flex items-center">
-              <input v-model="general.requireContactApproval" type="checkbox" class="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
-              <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Require contact approval before alerts can be sent</span>
-            </label>
+        </div>
+
+        <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div class="sm:w-60 shrink-0">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Max Contacts per User</label>
+            <p class="text-xs text-slate-400 mt-0.5">Currently set to 5 per requirements</p>
           </div>
-          <div class="pt-4">
-            <button type="submit" class="btn-primary">Save Changes</button>
+          <input
+            v-model.number="general.maxContacts"
+            type="number"
+            min="1"
+            max="10"
+            class="w-24 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400 font-mono"
+          />
+        </div>
+
+        <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-start gap-4">
+          <div class="sm:w-60 shrink-0">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Contact Approval</label>
+            <p class="text-xs text-slate-400 mt-0.5">Require contacts to accept nomination</p>
           </div>
+          <label class="relative inline-flex items-center cursor-pointer mt-0.5">
+            <input v-model="general.requireContactApproval" type="checkbox" class="sr-only peer" />
+            <div class="w-10 h-5 bg-slate-200 dark:bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-sky-400 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            <span class="ml-3 text-sm text-slate-600 dark:text-slate-300">
+              {{ general.requireContactApproval ? 'Required' : 'Not required' }}
+            </span>
+          </label>
+        </div>
+
+        <div class="px-6 py-4 bg-slate-50/60 dark:bg-slate-700/20 flex justify-end">
+          <button type="submit" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/20 transition-all active:scale-95">
+            <CheckIcon class="h-4 w-4" />
+            Save Changes
+          </button>
         </div>
       </form>
     </div>
 
-    <!-- Notification Templates -->
-    <div v-if="activeTab === 'templates'" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-      <div class="space-y-6">
-        <div v-for="template in templates" :key="template.id" class="border-b pb-4 last:border-0">
-          <h3 class="text-md font-medium mb-2">{{ template.name }}</h3>
-          <div class="grid grid-cols-1 gap-3">
+    <div v-if="activeTab === 'templates'" class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+        <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Notification Templates</h2>
+        <p class="text-xs text-slate-400 mt-0.5">SMS and email content sent to contacts during alerts</p>
+      </div>
+
+      <div class="divide-y divide-slate-100 dark:divide-slate-700">
+        <div v-for="template in templates" :key="template.id" class="px-6 py-6">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="h-6 w-6 rounded-lg bg-sky-100 dark:bg-sky-500/15 flex items-center justify-center">
+              <EnvelopeIcon class="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+            </div>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ template.name }}</h3>
+          </div>
+
+          <div class="space-y-3">
             <div>
-              <label class="block text-xs text-gray-500">SMS Template</label>
-              <textarea v-model="template.sms" rows="2" class="mt-1 block w-full rounded-md border-gray-300 text-sm font-mono"></textarea>
+              <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5">SMS Template</label>
+              <textarea
+                v-model="template.sms"
+                rows="2"
+                class="block w-full px-3 py-2 text-sm font-mono bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400 resize-none"
+              />
+              <p class="text-[11px] text-slate-400 mt-1">Variables: <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">{'{user}'}</code> <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">{'{type}'}</code> <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">{'{location}'}</code> <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">{'{verifyLink}'}</code></p>
             </div>
             <div>
-              <label class="block text-xs text-gray-500">Email Subject</label>
-              <input v-model="template.emailSubject" type="text" class="mt-1 block w-full rounded-md border-gray-300 text-sm" />
+              <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Email Subject</label>
+              <input
+                v-model="template.emailSubject"
+                type="text"
+                class="block w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              />
             </div>
             <div>
-              <label class="block text-xs text-gray-500">Email Body (HTML)</label>
-              <textarea v-model="template.emailBody" rows="4" class="mt-1 block w-full rounded-md border-gray-300 text-sm font-mono"></textarea>
+              <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Email Body (HTML)</label>
+              <textarea
+                v-model="template.emailBody"
+                rows="4"
+                class="block w-full px-3 py-2 text-sm font-mono bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400 resize-none"
+              />
             </div>
           </div>
         </div>
-        <div class="pt-4">
-          <button @click="saveTemplates" class="btn-primary">Save Templates</button>
-        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50/60 dark:bg-slate-700/20 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+        <button class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/20 transition-all active:scale-95" @click="saveTemplates">
+          <CheckIcon class="h-4 w-4" />
+          Save Templates
+        </button>
       </div>
     </div>
 
-    <!-- Agency Integrations -->
-    <div v-if="activeTab === 'integrations'" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-      <div class="space-y-6">
-        <div class="border rounded-lg p-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-md font-medium">Emergency Services API</h3>
-              <p class="text-sm text-gray-500">Integration with local emergency dispatch</p>
+    <div v-if="activeTab === 'integrations'" class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+        <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Agency Integrations</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Connect with external emergency dispatch services</p>
+      </div>
+
+      <div class="p-6">
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 bg-slate-50/60 dark:bg-slate-700/20">
+            <div class="flex items-center gap-3">
+              <div class="h-8 w-8 rounded-lg bg-red-100 dark:bg-red-500/15 flex items-center justify-center">
+                <BoltIcon class="h-4 w-4 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Emergency Services API</h3>
+                <p class="text-xs text-slate-400">Integration with local emergency dispatch</p>
+              </div>
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
-              <input v-model="integrations.emergencyApi.enabled" type="checkbox" class="sr-only peer">
-              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+              <input v-model="integrations.emergencyApi.enabled" type="checkbox" class="sr-only peer" />
+              <div class="w-10 h-5 bg-slate-200 dark:bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-sky-400 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
             </label>
           </div>
-          <div v-if="integrations.emergencyApi.enabled" class="mt-4 space-y-3">
-            <input v-model="integrations.emergencyApi.apiKey" type="password" placeholder="API Key" class="block w-full rounded-md border-gray-300" />
-            <input v-model="integrations.emergencyApi.endpoint" placeholder="API Endpoint URL" class="block w-full rounded-md border-gray-300" />
+          <div v-if="integrations.emergencyApi.enabled" class="px-5 py-4 space-y-3 border-t border-slate-200 dark:border-slate-700">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5">API Key</label>
+              <div class="relative">
+                <input
+                  v-model="integrations.emergencyApi.apiKey"
+                  :type="showApiKey ? 'text' : 'password'"
+                  placeholder="API key"
+                  class="block w-full pr-10 px-3 py-2 text-sm font-mono bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                />
+                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" @click="showApiKey = !showApiKey">
+                  <EyeIcon v-if="!showApiKey" class="h-4 w-4" />
+                  <EyeSlashIcon v-else class="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5">API Endpoint URL</label>
+              <input
+                v-model="integrations.emergencyApi.endpoint"
+                placeholder="https://dispatch.example.gov/api/v1"
+                class="block w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              />
+            </div>
+            <button
+              :disabled="testingConnection"
+              class="inline-flex items-center gap-1.5 text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 px-3 py-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 transition-colors"
+              @click="testConnection"
+            >
+              <ArrowPathIcon v-if="testingConnection" class="h-3.5 w-3.5 animate-spin" />
+              <SignalIcon v-else class="h-3.5 w-3.5" />
+              {{ testingConnection ? 'Testing...' : 'Test Connection' }}
+            </button>
           </div>
         </div>
-        <div class="pt-4">
-          <button @click="saveIntegrations" class="btn-primary">Save Integration Settings</button>
-        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50/60 dark:bg-slate-700/20 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+        <button class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/20 transition-all active:scale-95" @click="saveIntegrations">
+          <CheckIcon class="h-4 w-4" />
+          Save Integration Settings
+        </button>
       </div>
     </div>
 
-    <!-- Data Retention & Privacy -->
-    <div v-if="activeTab === 'privacy'" class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium">Alert Data Retention (days)</label>
-          <input v-model.number="privacy.alertRetentionDays" type="number" min="30" class="mt-1 block w-32 rounded-md border-gray-300" />
-          <p class="text-xs text-gray-500 mt-1">Alerts older than this will be anonymized or deleted.</p>
+    <div v-if="activeTab === 'privacy'" class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+        <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Privacy &amp; Data Retention</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Control how long data is kept and how it's handled</p>
+      </div>
+
+      <form class="divide-y divide-slate-100 dark:divide-slate-700" @submit.prevent="savePrivacy">
+        <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-start gap-4">
+          <div class="sm:w-60 shrink-0">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Alert Data Retention</label>
+            <p class="text-xs text-slate-400 mt-0.5">Alerts older than this are anonymized or deleted</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input
+              v-model.number="privacy.alertRetentionDays"
+              type="number"
+              min="30"
+              class="w-24 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400 font-mono"
+            />
+            <span class="text-sm text-slate-400">days</span>
+          </div>
         </div>
-        <div>
-          <label class="inline-flex items-center">
-            <input v-model="privacy.anonymizeLocation" type="checkbox" class="rounded border-gray-300 text-primary-600" />
-            <span class="ml-2 text-sm">Anonymize precise location after retention period</span>
+
+        <div class="px-6 py-5 flex flex-col sm:flex-row sm:items-start gap-4">
+          <div class="sm:w-60 shrink-0">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Location Anonymization</label>
+            <p class="text-xs text-slate-400 mt-0.5">Blur precise coordinates after retention period</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer mt-0.5">
+            <input v-model="privacy.anonymizeLocation" type="checkbox" class="sr-only peer" />
+            <div class="w-10 h-5 bg-slate-200 dark:bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-sky-400 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            <span class="ml-3 text-sm text-slate-600 dark:text-slate-300">
+              {{ privacy.anonymizeLocation ? 'Enabled' : 'Disabled' }}
+            </span>
           </label>
         </div>
-        <div class="pt-4">
-          <button @click="savePrivacy" class="btn-primary">Save Privacy Settings</button>
+
+        <div class="px-6 py-4">
+          <div class="flex items-start gap-3 p-3.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl">
+            <ExclamationTriangleIcon class="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <p class="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+              Changes to retention settings are applied on the next scheduled maintenance run. Already-retained data is not affected retroactively.
+            </p>
+          </div>
         </div>
-      </div>
+
+        <div class="px-6 py-4 bg-slate-50/60 dark:bg-slate-700/20 flex justify-end">
+          <button type="submit" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/20 transition-all active:scale-95">
+            <CheckIcon class="h-4 w-4" />
+            Save Privacy Settings
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import {
+  CogIcon, EnvelopeIcon, BoltIcon, ShieldCheckIcon,
+  CheckIcon, EyeIcon, EyeSlashIcon, ArrowPathIcon,
+  SignalIcon, ExclamationTriangleIcon
+} from '@heroicons/vue/24/outline'
 import { useApi } from '~/composables/useApi'
+
+interface GeneralSettings {
+  systemName: string
+  targetResponseMinutes: number
+  maxContacts: number
+  requireContactApproval: boolean
+}
+
+interface TemplateSettings {
+  id: string
+  name: string
+  sms: string
+  emailSubject: string
+  emailBody: string
+}
+
+interface IntegrationSettings {
+  emergencyApi: {
+    enabled: boolean
+    apiKey: string
+    endpoint: string
+  }
+}
+
+interface PrivacySettings {
+  alertRetentionDays: number
+  anonymizeLocation: boolean
+}
+
+interface SettingsResponse {
+  general?: Partial<GeneralSettings>
+  templates?: TemplateSettings[]
+  integrations?: Partial<IntegrationSettings>
+  privacy?: Partial<PrivacySettings>
+}
+
 definePageMeta({ layout: 'admin' })
 
 const tabs = [
-  { id: 'general', name: 'General' },
-  { id: 'templates', name: 'Notification Templates' },
-  { id: 'integrations', name: 'Integrations' },
-  { id: 'privacy', name: 'Privacy & Data' },
+  { id: 'general', name: 'General', icon: CogIcon },
+  { id: 'templates', name: 'Templates', icon: EnvelopeIcon },
+  { id: 'integrations', name: 'Integrations', icon: BoltIcon },
+  { id: 'privacy', name: 'Privacy', icon: ShieldCheckIcon },
 ]
 
 const activeTab = ref('general')
+const showApiKey = ref(false)
+const testingConnection = ref(false)
 
-// General settings
-const general = reactive({
-  systemName: 'Emergency Response System',
+const general = reactive<GeneralSettings>({
+  systemName: 'SafeLink Emergency Response',
   targetResponseMinutes: 5,
   maxContacts: 5,
   requireContactApproval: true
 })
 
-// Templates
-const templates = ref([
+const templates = ref<TemplateSettings[]>([
   {
     id: 'alert_triggered',
-    name: 'Alert Triggered (to contacts)',
+    name: 'Alert Triggered (sent to contacts)',
     sms: 'EMERGENCY: {user} has triggered a {type} alert. Location: {location}. Verify: {verifyLink}',
     emailSubject: 'Emergency Alert from {user}',
-    emailBody: '<p>This is an emergency alert...</p>'
+    emailBody: '<p>This is an emergency alert from <strong>{user}</strong>...</p>'
   },
   {
     id: 'contact_invite',
     name: 'Contact Nomination Request',
-    sms: '{user} has added you as emergency contact. Accept? {acceptLink}',
-    emailSubject: 'Emergency Contact Request',
-    emailBody: '<p>Please confirm...</p>'
+    sms: '{user} has added you as an emergency contact. Accept? {acceptLink}',
+    emailSubject: 'You have been nominated as an Emergency Contact',
+    emailBody: '<p>Please confirm your nomination by clicking the link below...</p>'
   }
 ])
 
-const integrations = reactive({
-  emergencyApi: {
-    enabled: false,
-    apiKey: '',
-    endpoint: ''
-  }
+const integrations = reactive<IntegrationSettings>({
+  emergencyApi: { enabled: false, apiKey: '', endpoint: '' }
 })
 
-const privacy = reactive({
+const privacy = reactive<PrivacySettings>({
   alertRetentionDays: 365,
   anonymizeLocation: true
 })
 
-// Load settings on mount
 onMounted(async () => {
-  const { data } = await useApi('/admin/settings')
-  if (data.value) {
-    Object.assign(general, data.value.general)
-    templates.value = data.value.templates
-    Object.assign(integrations, data.value.integrations)
-    Object.assign(privacy, data.value.privacy)
-  }
+  const { data } = await useApi<SettingsResponse>('/admin/settings')
+  const settings = data.value
+  if (!settings) return
+
+  if (settings.general) Object.assign(general, settings.general)
+  if (settings.templates) templates.value = settings.templates
+  if (settings.integrations) Object.assign(integrations, settings.integrations)
+  if (settings.privacy) Object.assign(privacy, settings.privacy)
 })
 
-const saveGeneralSettings = async () => {
-  await useApi('/admin/settings/general', { method: 'PUT', body: general })
-}
+const saveGeneralSettings = () => useApi('/admin/settings/general', { method: 'PUT', body: general })
+const saveTemplates = () => useApi('/admin/settings/templates', { method: 'PUT', body: templates.value })
+const saveIntegrations = () => useApi('/admin/settings/integrations', { method: 'PUT', body: integrations })
+const savePrivacy = () => useApi('/admin/settings/privacy', { method: 'PUT', body: privacy })
 
-const saveTemplates = async () => {
-  await useApi('/admin/settings/templates', { method: 'PUT', body: templates.value })
-}
-
-const saveIntegrations = async () => {
-  await useApi('/admin/settings/integrations', { method: 'PUT', body: integrations })
-}
-
-const savePrivacy = async () => {
-  await useApi('/admin/settings/privacy', { method: 'PUT', body: privacy })
+const testConnection = async () => {
+  testingConnection.value = true
+  await new Promise((resolve) => setTimeout(resolve, 1200))
+  testingConnection.value = false
 }
 </script>

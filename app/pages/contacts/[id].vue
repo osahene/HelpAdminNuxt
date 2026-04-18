@@ -96,13 +96,16 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, CheckCircleIcon, EnvelopeIcon, ArrowPathIcon, BellIcon } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
+import { useApi } from '~/composables/useApi'
+import type { Contact } from '~/types'
+
 
 definePageMeta({ layout: 'admin' })
 
 const route = useRoute()
 const contactId = route.params.id as string
-const { data: contact } = await useApi(`/admin/contacts/${contactId}`)
-const { data: notifications, pending: loadingNotifications } = await useApi(`/admin/contacts/${contactId}/notifications`)
+const { data: contact } = await useApi<Contact>(`/admin/contacts/${contactId}`)
+const { data: notifications, pending: loadingNotifications } = await useApi<Notification[]>(`/admin/contacts/${contactId}/notifications`)
 
 const notificationColumns = [
   { key: 'alertType', label: 'Alert Type' },
