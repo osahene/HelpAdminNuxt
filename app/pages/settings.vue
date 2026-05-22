@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-3xl mx-auto space-y-5">
+  <div class="w-full mx-auto space-y-5">
     <div>
       <h1 class="text-xl font-bold text-slate-900 dark:text-white">Settings</h1>
       <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Manage system configuration and preferences</p>
@@ -328,7 +328,7 @@ const showApiKey = ref(false)
 const testingConnection = ref(false)
 
 const general = reactive<GeneralSettings>({
-  systemName: 'SafeLink Emergency Response',
+  systemName: 'Help OO Help',
   targetResponseMinutes: 5,
   maxContacts: 5,
   requireContactApproval: true

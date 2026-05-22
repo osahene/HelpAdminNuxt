@@ -172,7 +172,7 @@ const userInitials = computed(() => {
 const logout = async () => {
   const authStore = useAuthStore()
   await authStore.logout()
-  navigateTo('/login')
+  navigateTo('/auth/login')
 }
 
 useHead({

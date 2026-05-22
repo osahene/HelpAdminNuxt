@@ -19,7 +19,7 @@ export const useApi = <T>(url: string, options: UseFetchOptions<T> = {}) => {
     onResponseError({ response }) {
       if (response?.status === 401) {
         authStore.logout()
-        navigateTo('/login')
+        navigateTo('/auth/login')
       }
     }
   })

@@ -96,7 +96,7 @@
     </div>
 
     <p class="text-center text-sm text-slate-500 mt-4">
-      <NuxtLink to="/login" class="text-slate-400 hover:text-white transition-colors">← Back to login</NuxtLink>
+      <NuxtLink to="/auth/login" class="text-slate-400 hover:text-white transition-colors">← Back to login</NuxtLink>
     </p>
   </div>
 </template>
@@ -176,7 +176,7 @@ const verifyPin = async () => {
   try {
     await authStore.verifyAuthPin({ email: email.value, pin: code.value })
     success.value = true
-    setTimeout(() => navigateTo('/login'), 1200)
+    setTimeout(() => navigateTo('/auth/login'), 1200)
   } catch (err: any) {
     attemptsLeft.value = Math.max(0, attemptsLeft.value - 1)
     error.value = err?.data?.message || 'Invalid PIN. Please try again.'

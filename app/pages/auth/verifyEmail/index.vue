@@ -72,7 +72,7 @@
     </button>
 
     <p class="text-center text-sm text-slate-500 mt-5">
-      <NuxtLink to="/register" class="text-slate-400 hover:text-white transition-colors">← Back to registration</NuxtLink>
+      <NuxtLink to="/auth/register" class="text-slate-400 hover:text-white transition-colors">← Back to registration</NuxtLink>
     </p>
   </div>
 </template>

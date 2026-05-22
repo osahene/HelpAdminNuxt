@@ -17,12 +17,12 @@ import { useAuthStore } from '~/stores/authLog'
 
 // Routes that do NOT require authentication
 const PUBLIC_ROUTES = [
-  '/login',
-  '/register',
-  '/verify-email',
-  '/auth-pin',
-  '/forgot-password',
-  '/reset-password',
+  '/auth/login',
+  '/auth/register',
+  '/auth/verify-email',
+  '/auth/auth-pin',
+  '/auth/forgot-password',
+  '/auth/reset-password',
 ]
 
 // Role-based access map: route prefix → allowed roles
@@ -63,7 +63,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // ── 4. Unauthenticated user trying to access a protected route ───────────────
   if (!isAuthenticated && !isPublicRoute) {
     return navigateTo(
-      { path: '/login', query: { redirect: to.fullPath } },
+      { path: '/auth/login', query: { redirect: to.fullPath } },
       { replace: true }
     )
   }

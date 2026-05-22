@@ -18,7 +18,7 @@ export const useAuth = () => {
 
   const logout = () => {
     authStore.logout()
-    router.push('/login')
+    router.push('/auth/login')
   }
 
   const isAuthenticated = computed(() => authStore.isAuthenticated)

@@ -137,7 +137,7 @@
 
     <p class="text-center text-sm text-slate-500 mt-6">
       Already have an account?
-      <NuxtLink to="/login" class="text-sky-400 hover:text-sky-300 font-medium transition-colors">Sign in</NuxtLink>
+      <NuxtLink to="/auth/login" class="text-sky-400 hover:text-sky-300 font-medium transition-colors">Sign in</NuxtLink>
     </p>
   </div>
 </template>
