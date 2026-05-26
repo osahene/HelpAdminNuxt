@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import type { User } from '~/types'
-import { useApi } from '~/composables/useApi'
 
 
 
@@ -12,14 +11,16 @@ export const useUsersStore = defineStore('users', {
   }),
   actions: {
     async fetchUsers(filters = {}) {
+      const { $api } = useNuxtApp();
       this.loading = true
-      const { data } = await useApi('/admin/users', { params: filters })
+      const { data } = await $api.users({ params: filters })
       this.users = data.value.users
       this.pagination = data.value.pagination
       this.loading = false
     },
     async sendContactReminder(userId: string) {
-      await useApi(`/admin/users/${userId}/remind-contacts`, { method: 'POST' })
+      const { $api } = useNuxtApp();
+      await $api.usersIdRemindContacts(userId)
     }
   }
 })

@@ -16,7 +16,12 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Keys within public are also exposed client-side
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3000/api'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3000/api',
+      baseURL: process.env.VITE_baseURL || 'http://127.0.0.1:8000/',
     }
   },
+plugins: [
+    '~/plugins/axiosInstance.ts',
+    '~/plugins/axiosKeys.ts',
+  ],
 })

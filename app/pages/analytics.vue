@@ -160,6 +160,8 @@ import DataTable from '~/components/admin/DataTable.vue'
 
 definePageMeta({ layout: 'admin' })
 
+const { $api } = useNuxtApp()
+
 const dateRange = ref<{ start: Date | null; end: Date | null }>({ start: null, end: null })
 
 const kpis = ref({ totalAlerts: 0, avgResponseTime: 0, falseAlarmRate: 0, userActivationRate: 0 })
@@ -201,7 +203,7 @@ const fetchAnalytics = async () => {
   if (dateRange.value.start) params.start = dateRange.value.start.toISOString()
   if (dateRange.value.end) params.end = dateRange.value.end.toISOString()
 
-  const { data } = await useApi<any>('/admin/analytics', { params })
+  const { data } = await $api.analytics({ params })
   if (data.value) {
     kpis.value = data.value.kpis
     alertsByTypeTime.value = data.value.alertsByTypeTime

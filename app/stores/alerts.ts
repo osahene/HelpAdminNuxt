@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { useApi } from '~/composables/useApi'
 import type { Alert } from '~/types'
 
 
@@ -11,13 +10,15 @@ export const useAlertsStore = defineStore('alerts', {
   }),
   actions: {
     async fetchAlerts(filters?: any) {
+      const { $api } = useNuxtApp(); 
       this.loading = true
-      const { data } = await useApi('/alerts', { params: filters })
+      const { data } = await $api.alerts({ params: filters })
       this.alerts = data.value
       this.loading = false
     },
     async updateResponseTimes(alertId: string, times: any) {
-      await useApi(`/alerts/${alertId}/response`, { method: 'PATCH', body: times })
+      const { $api } = useNuxtApp(); 
+      await $api.alertsResponseTime(alertId)
     },
   },
 })

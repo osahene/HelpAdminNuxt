@@ -126,6 +126,8 @@ import DatePicker from '~/components/ui/DatePicker.vue'
 
 definePageMeta({ layout: 'admin' })
 
+const { $api } = useNuxtApp()
+
 interface ReportType {
   id: string
   name: string
@@ -192,9 +194,14 @@ const formatDate = (date: string) => new Date(date).toLocaleString()
 const generateReport = async (report: ReportType) => {
   generatingId.value = report.id
   try {
-    const { data } = await useApi<GeneratedReport>('/admin/reports/generate', {
-      method: 'POST',
-      body: { type: report.id, dateRange: report.dateRange }
+    const { data } = await $api.reportsGenerate({
+      type: report.id,
+      dateRange: report.dateRange.start && report.dateRange.end
+        ? {
+            start: report.dateRange.start.toISOString(),
+            end: report.dateRange.end.toISOString()
+          }
+        : null  
     })
     if (data.value) {
       generatedReports.value.unshift(data.value)

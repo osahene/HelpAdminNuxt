@@ -1,24 +1,21 @@
 <template>
   <div class="space-y-5">
 
-    <!-- Back + title -->
     <div class="flex items-center gap-3">
       <button @click="navigateTo('/users')" class="p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all">
         <ArrowLeftIcon class="h-4 w-4" />
       </button>
       <div>
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white">{{ user?.name }}</h1>
+        <h1 class="text-xl font-bold text-slate-900 dark:text-white">{{ user?.name || user?.full_name }}</h1>
         <p class="text-xs text-slate-400 mt-0.5">User profile</p>
       </div>
     </div>
 
-    <!-- Profile + stats row -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <!-- Profile card -->
       <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-6">
         <div class="flex items-start gap-5">
           <div class="h-14 w-14 rounded-2xl bg-linear-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white text-lg font-bold shadow-md shrink-0">
-            {{ getInitials(user?.name) }}
+            {{ getInitials(user?.name || user?.full_name) }}
           </div>
           <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
             <div>
@@ -27,21 +24,20 @@
             </div>
             <div>
               <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Phone</dt>
-              <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ user?.phone || '—' }}</dd>
+              <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ user?.phone || user?.phone_number || '—' }}</dd>
             </div>
             <div>
               <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Registered On</dt>
-              <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ formatDate(user?.createdAt) }}</dd>
+              <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ formatDate(user?.created_at) }}</dd>
             </div>
             <div>
               <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Total Alerts</dt>
-              <dd class="mt-1 text-sm font-mono font-bold text-slate-900 dark:text-white">{{ (alerts || []).length }}</dd>
+              <dd class="mt-1 text-sm font-mono font-bold text-slate-900 dark:text-white">{{ alerts.length }}</dd>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Contact coverage card -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Contact Coverage</h3>
@@ -57,7 +53,6 @@
           <span :class="['text-4xl font-bold font-mono leading-none', coverageColor]">{{ approvedContactsCount }}</span>
           <span class="text-lg text-slate-400 mb-0.5">/ 5</span>
         </div>
-        <!-- Coverage dots -->
         <div class="flex gap-2 mb-3">
           <div
             v-for="i in 5"
@@ -71,14 +66,13 @@
       </div>
     </div>
 
-    <!-- Emergency contacts table -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
       <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
         <div class="flex items-center gap-2">
           <PhoneIcon class="h-4 w-4 text-sky-500" />
           <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Emergency Contacts</h3>
           <span class="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full font-medium">
-            {{ (contacts || []).length }} / 5
+            {{ contacts.length }} / 5
           </span>
         </div>
       </div>
@@ -95,22 +89,22 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
-          <tr v-for="contact in contacts || []" :key="contact.id" class="group hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors">
+          <tr v-for="contact in contacts" :key="contact.id" class="group hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors">
             <td class="px-5 py-3.5">
               <div class="flex items-center gap-2">
                 <div class="h-6 w-6 rounded-full bg-linear-to-br from-violet-400 to-purple-600 flex items-center justify-center text-[9px] font-bold text-white shrink-0">
-                  {{ getInitials(contact.name) }}
+                  {{ getInitials(contact.name || contact.first_name) }}
                 </div>
-                <span class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ contact.name }}</span>
+                <span class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ contact.name || `${contact.first_name || ''} ${contact.last_name || ''}` }}</span>
               </div>
             </td>
-            <td class="px-5 py-3.5 text-sm text-slate-600 dark:text-slate-400">{{ contact.phone }}</td>
-            <td class="px-5 py-3.5 text-sm text-slate-600 dark:text-slate-400">{{ contact.email || '—' }}</td>
+            <td class="px-5 py-3.5 text-sm text-slate-600 dark:text-slate-400">{{ contact.phone || contact.phone_number }}</td>
+            <td class="px-5 py-3.5 text-sm text-slate-600 dark:text-slate-400">{{ contact.email || contact.email_address || '—' }}</td>
             <td class="px-5 py-3.5">
               <span :class="contactStatusBadge(contact.status)">{{ contact.status }}</span>
             </td>
             <td class="px-5 py-3.5">
-              <span v-if="contact.isUser" class="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              <span v-if="contact.is_user || contact.contact_user" class="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                 <CheckCircleIcon class="h-3.5 w-3.5" /> Yes
               </span>
               <button
@@ -131,14 +125,13 @@
               </button>
             </td>
           </tr>
-          <tr v-if="!(contacts || []).length">
+          <tr v-if="!contacts.length">
             <td colspan="6" class="px-5 py-12 text-center text-sm text-slate-400">No contacts added yet</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Alert history -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
         <BellAlertIcon class="h-4 w-4 text-red-500" />
@@ -146,8 +139,8 @@
       </div>
       <DataTable
         :columns="alertColumns"
-        :data="alerts || []"
-        :loading="!!loadingAlerts"
+        :data="alerts"
+        :loading="loadingAlerts"
         @row-click="(row) => navigateTo(`/alerts/${row.id}`)"
       >
         <template #cell-type="{ row }">
@@ -164,20 +157,47 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon, BellAlertIcon } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
-import { useApi } from '~/composables/useApi'
 import type { User, Alert, Contact } from '~/types'
 
 definePageMeta({ layout: 'admin' })
 
+// Fetch provided global service registry plugin
+const { $api } = useNuxtApp()
+
 const route = useRoute()
 const userId = route.params.id as string
 
-const { data: user } = await useApi<User>(`/admin/users/${userId}`)
-const { data: contacts } = await useApi<Contact[]>(`/admin/users/${userId}/contacts`)
-const { data: alerts, pending: loadingAlerts } = await useApi<Alert[]>(`/admin/users/${userId}/alerts`)
+// Initialize refs for holding asynchronously loaded asynchronous metrics securely
+const user = ref<any>(null)
+const contacts = ref<any[]>([])
+const alerts = ref<any[]>([])
+const loadingAlerts = ref(false)
+
+// Replaces raw macro executions with designated service handlers inside a structured hook execution block
+const loadProfileDashboardData = async () => {
+  loadingAlerts.value = true
+  try {
+    const [userRes, contactsRes, alertsRes] = await Promise.all([
+      $api.usersId(userId),
+      $api.usersIdContacts(userId),
+      $api.usersIdAlerts(userId)
+    ])
+    
+    user.value = userRes.data
+    contacts.value = contactsRes.data || []
+    alerts.value = alertsRes.data || []
+  } catch (error) {
+    console.error('Failed to resolve user profile details metrics:', error)
+  } finally {
+    loadingAlerts.value = false
+  }
+}
+
+// Fire request sequence
+await loadProfileDashboardData()
 
 const approvedContactsCount = computed(() =>
-  (contacts.value || []).filter((c: Contact) => c.status === 'approved').length
+  contacts.value.filter((c: any) => c.status === 'approved').length
 )
 
 const coverageColor = computed(() => {
@@ -189,7 +209,7 @@ const coverageColor = computed(() => {
 
 const alertColumns = [
   { key: 'type', label: 'Type' },
-  { key: 'createdAt', label: 'Date', format: (v: string) => formatDate(v) },
+  { key: 'created_at', label: 'Date', format: (v: string) => formatDate(v) },
   { key: 'status', label: 'Status' },
 ]
 
@@ -232,7 +252,32 @@ const alertStatusBadge = (s: string) => {
 
 const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString() : '—'
 
-const sendContactReminder = async () => { await useApi(`/admin/users/${userId}/remind-contacts`, { method: 'POST' }) }
-const inviteContact = async (contact: Contact) => { await useApi(`/admin/contacts/${contact.id}/invite`, { method: 'POST' }) }
-const resendInvite = async (contactId: string) => { await useApi(`/admin/contacts/${contactId}/resend-invite`, { method: 'POST' }) }
+// Action dispatch methods bound precisely to apiService schemas
+const sendContactReminder = async () => {
+  try {
+    await $api.usersIdRemindContacts(userId)
+    alert('Reminder sent successfully.')
+  } catch (err) {
+    console.error('Failed dispatching notification queue action:', err)
+  }
+}
+
+const inviteContact = async (contact: any) => {
+  try {
+    await $api.inviteContact(contact.id)
+    alert('Invitation initialized.')
+    await loadProfileDashboardData() // Reload table state
+  } catch (err) {
+    console.error('Failed triggering registration invite workflow:', err)
+  }
+}
+
+const resendInvite = async (contactId: string) => {
+  try {
+    await $api.resendInvite(contactId)
+    alert('Invitation resent successfully.')
+  } catch (err) {
+    console.error('Failed retry dispatching mechanism sequence:', err)
+  }
+}
 </script>

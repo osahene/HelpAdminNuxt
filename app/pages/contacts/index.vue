@@ -140,10 +140,11 @@ import {
   PhoneIcon, CheckCircleIcon, ChevronLeftIcon, ChevronRightIcon
 } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
-import { useApi } from '~/composables/useApi'
 import type { Contact } from '~/types'
 
 definePageMeta({ layout: 'admin' })
+
+const { $api } = useNuxtApp()
 
 const filters = reactive({ search: '', status: '', isUser: '' })
 const pagination = ref({ currentPage: 1, totalPages: 1, from: 0, to: 0, total: 0 })
@@ -178,16 +179,18 @@ const statusDot = (s: string) => statusConfig[s]?.dot ?? 'bg-slate-400'
 
 const fetchContacts = async () => {
   loading.value = true
-  const { data } = await useApi<Contact[]>('/admin/contacts', { params: { ...filters, page: pagination.value.currentPage } })
-  contacts.value = data.value?.name ?? []
+  const { data } = await $api.contacts({
+    params: { ...filters, page: pagination.value.currentPage }
+  })
+  contacts.value = data.value?.data ?? []
   pagination.value = data.value?.pagination ?? pagination.value
   loading.value = false
 }
 
 const applyFilters = () => { pagination.value.currentPage = 1; fetchContacts() }
 const changePage = (p: number) => { pagination.value.currentPage = p; fetchContacts() }
-const inviteContact = async (contact: Contact) => { await useApi(`/admin/contacts/${contact.id}/invite`, { method: 'POST' }) }
-const resendInvite = async (id: string) => { await useApi(`/admin/contacts/${id}/resend-invite`, { method: 'POST' }) }
+const inviteContact = async (contact: Contact) => { await $api.inviteContact({ contactId: contact.id }) }
+const resendInvite = async (id: string) => { await $api.resendInvite({ contactId: id }) }
 
 onMounted(fetchContacts)
 </script>

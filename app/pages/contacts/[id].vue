@@ -96,16 +96,16 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, CheckCircleIcon, EnvelopeIcon, ArrowPathIcon, BellIcon } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
-import { useApi } from '~/composables/useApi'
 import type { Contact } from '~/types'
-
 
 definePageMeta({ layout: 'admin' })
 
+const { $api } = useNuxtApp()
+
 const route = useRoute()
 const contactId = route.params.id as string
-const { data: contact } = await useApi<Contact>(`/admin/contacts/${contactId}`)
-const { data: notifications, pending: loadingNotifications } = await useApi<Notification[]>(`/admin/contacts/${contactId}/notifications`)
+const { data: contact } = await $api.contact({ contactId })
+const { data: notifications, pending: loadingNotifications } = await $api.contactNotifications({ contactId })
 
 const notificationColumns = [
   { key: 'alertType', label: 'Alert Type' },
@@ -148,6 +148,6 @@ const deliveryStatusBadge = (s: string) => {
 }
 
 const formatDate = (d: string) => new Date(d).toLocaleDateString()
-const inviteContact = async () => { await useApi(`/admin/contacts/${contactId}/invite`, { method: 'POST' }) }
-const resendInvite = async () => { await useApi(`/admin/contacts/${contactId}/resend-invite`, { method: 'POST' }) }
+const inviteContact = async () => { await $api.inviteContact({ contactId }) }
+const resendInvite = async () => { await $api.resendInvite({ contactId }) }
 </script>

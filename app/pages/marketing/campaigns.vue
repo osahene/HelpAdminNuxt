@@ -194,6 +194,8 @@ import {
 
 definePageMeta({ layout: 'admin' })
 
+const { $api } = useNuxtApp()
+
 const form = reactive({
   name: '',
   recipientType: 'all_users' as string,
@@ -217,22 +219,53 @@ const recipientOptions = [
   { value: 'custom', label: 'Custom Filter', description: 'Define your own audience', icon: UserGroupIcon },
 ]
 
+// Helper to map camelCase frontend data to snake_case backend keys
+const preparePayload = (statusValue: 'draft' | 'sending') => {
+  return {
+    name: form.name,
+    recipient_type: form.recipientType, // Mapped to Django model
+    channels: form.channels,
+    subject: form.subject,
+    body: form.body,
+    filters: form.recipientType === 'custom' ? form.filters : {},
+    status: statusValue
+  }
+}
+
 const previewRecipients = async () => {
   previewLoading.value = true
-  const { data } = await useApi('/admin/campaigns/preview', { params: form })
-  estimatedCount.value = data.value?.count ?? 0
-  previewLoading.value = false
+  try {
+    // Note: Django preview uses campaign ID normally, but if this is an estimation 
+    // before creation, make sure your backend supports parsing query params on this route.
+    const res = await $api.campaignsIdPreview('estimate') 
+    estimatedCount.value = res.data?.count ?? 0
+  } catch (error) {
+    console.error("Failed to fetch recipient preview:", error)
+  } finally {
+    previewLoading.value = false
+  }
 }
 
 const sendCampaign = async () => {
   sending.value = true
-  await useApi('/admin/campaigns', { method: 'POST', body: form })
-  sending.value = false
-  navigateTo('/marketing')
+  try {
+    const payload = preparePayload('sending')
+    await $api.campaigns(payload) // Hits POST /trap_admin/campaigns/
+    navigateTo('/marketing')
+  } catch (error) {
+    console.error("Failed to dispatch campaign:", error)
+  } finally {
+    sending.value = false
+  }
 }
 
 const saveDraft = async () => {
-  await useApi('/admin/campaigns', { method: 'POST', body: { ...form, status: 'draft' } })
-  navigateTo('/marketing')
+  try {
+    const payload = preparePayload('draft')
+    await $api.campaigns(payload) // Hits POST /trap_admin/campaigns/
+    navigateTo('/marketing')
+  } catch (error) {
+    console.error("Failed to save draft:", error)
+  }
 }
 </script>

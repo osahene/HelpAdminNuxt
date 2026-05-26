@@ -1,6 +1,5 @@
 // stores/analytics.ts
 import { defineStore } from 'pinia'
-import { useApi } from '~/composables/useApi'
 import type { DashboardStats, Alert, DashboardResponse, ActiveAlertsResponse } from '~/types'
 
 export const useAnalyticsStore = defineStore('analytics', {
@@ -22,8 +21,8 @@ export const useAnalyticsStore = defineStore('analytics', {
     async fetchDashboardData() {
       this.loading = true
       try {
-        // Use generic type to tell TypeScript what to expect
-        const { data } = await useApi<DashboardResponse>('/admin/dashboard')
+         const { $api } = useNuxtApp(); // Get the API service from Nuxt context
+        const { data } = await $api.dashboardData();
         if (data.value) {
           this.stats = data.value.stats
           this.alertsByType = data.value.alertsByType
@@ -36,7 +35,8 @@ export const useAnalyticsStore = defineStore('analytics', {
       }
     },
     async fetchActiveAlerts() {
-      const { data } = await useApi<Alert[]>('/alerts/active')
+      const { $api } = useNuxtApp();
+      const { data } = await $api.alertsActive();
       if (data.value) {
         this.activeAlerts = data.value
       }

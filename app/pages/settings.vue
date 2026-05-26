@@ -277,7 +277,8 @@ import {
   CheckIcon, EyeIcon, EyeSlashIcon, ArrowPathIcon,
   SignalIcon, ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline'
-import { useApi } from '~/composables/useApi'
+
+const { $api } = useNuxtApp()
 
 interface GeneralSettings {
   systemName: string
@@ -361,7 +362,7 @@ const privacy = reactive<PrivacySettings>({
 })
 
 onMounted(async () => {
-  const { data } = await useApi<SettingsResponse>('/admin/settings')
+  const { data } = await $api.settings() as { data: SettingsResponse }
   const settings = data.value
   if (!settings) return
 
@@ -371,11 +372,38 @@ onMounted(async () => {
   if (settings.privacy) Object.assign(privacy, settings.privacy)
 })
 
-const saveGeneralSettings = () => useApi('/admin/settings/general', { method: 'PUT', body: general })
-const saveTemplates = () => useApi('/admin/settings/templates', { method: 'PUT', body: templates.value })
-const saveIntegrations = () => useApi('/admin/settings/integrations', { method: 'PUT', body: integrations })
-const savePrivacy = () => useApi('/admin/settings/privacy', { method: 'PUT', body: privacy })
+const saveGeneralSettings = async () => {
+  try {
+    await $api.settingsGeneral(general)
+    // TODO: show success notification
+  } catch (error) {
+    console.error('Failed to save general settings:', error)
+  }
+}
 
+const saveTemplates = async () => {
+  try {
+    await $api.settingsTemplates(templates.value)
+  } catch (error) {
+    console.error('Failed to save templates:', error)
+  }
+}
+
+const saveIntegrations = async () => {
+  try {
+    await $api.settingsIntegrations(integrations)
+  } catch (error) {
+    console.error('Failed to save integrations:', error)
+  }
+}
+
+const savePrivacy = async () => {
+  try {
+    await $api.settingsPrivacy(privacy)
+  } catch (error) {
+    console.error('Failed to save privacy settings:', error)
+  }
+}
 const testConnection = async () => {
   testingConnection.value = true
   await new Promise((resolve) => setTimeout(resolve, 1200))

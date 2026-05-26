@@ -52,7 +52,7 @@
       <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-5">
         <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Alert Type</p>
         <div class="mt-3 flex items-center gap-3">
-          <div :class="['h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0', typeIconBg(alert?.type)]">
+          <div :class="['h-10 w-10 rounded-xl flex items-center justify-center shrink-0', typeIconBg(alert?.type)]">
             <component :is="typeIcon(alert?.type)" :class="['h-5 w-5', typeIconColor(alert?.type)]" />
           </div>
           <span class="text-lg font-bold text-slate-900 dark:text-white capitalize">{{ alert?.type || '—' }}</span>
@@ -138,7 +138,7 @@
         <ol class="relative border-l-2 border-slate-200 dark:border-slate-700 space-y-0">
           <li v-for="(event, i) in timelineEvents" :key="event.id" class="ml-6 pb-8 last:pb-0">
             <!-- Connector dot -->
-            <span :class="['absolute -left-[9px] flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-white dark:ring-slate-800', event.iconBg]">
+            <span :class="['absolute -left-2.5 flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-white dark:ring-slate-800', event.iconBg]">
               <component :is="event.icon" class="h-2.5 w-2.5 text-white" />
             </span>
             <div class="flex items-start justify-between gap-4">
@@ -242,7 +242,7 @@
               <span class="text-xs text-slate-600 dark:text-slate-400 truncate flex-1 font-mono">{{ link.url }}</span>
               <button
                 @click="copyLink(link.url)"
-                class="flex-shrink-0 p-1 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors"
+                class="shrink-0 p-1 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors"
                 title="Copy link"
               >
                 <ClipboardIcon class="h-3.5 w-3.5" />
@@ -272,9 +272,11 @@ import type { Alert } from '~/types'
 
 definePageMeta({ layout: 'admin' })
 
+const { $api } = useNuxtApp()
+
 const route = useRoute()
 const alertId = route.params.id as string
-const { data: alert, refresh } = await useApi<Alert>(`/alerts/${alertId}`)
+const { data: alert, refresh } = await $api.alert({alertId})
 
 const responseForm = reactive({
   agencyNotifiedAt: alert.value?.agencyNotifiedAt?.slice(0, 16) || '',
@@ -366,18 +368,18 @@ const formatTime = (d: string) => format(new Date(d), 'HH:mm')
 const copyLink = (text: string) => navigator.clipboard.writeText(text)
 
 const updateResponseTimes = async () => {
-  await useApi(`/alerts/${alertId}/response`, {
-    method: 'PATCH',
-    body: { agencyNotifiedAt: responseForm.agencyNotifiedAt, agencyArrivedAt: responseForm.agencyArrivedAt }
+  await $api.alertsResponseTime(alertId, {
+    agencyNotifiedAt: responseForm.agencyNotifiedAt,
+    agencyArrivedAt: responseForm.agencyArrivedAt
   })
   refresh()
 }
 const markAsFalseAlarm = async () => {
-  await useApi(`/alerts/${alertId}/status`, { method: 'PATCH', body: { status: 'false_alarm' } })
+  await $api.alertsIdStatus(alertId, { status: 'false_alarm' })
   refresh()
 }
 const resolveAlert = async () => {
-  await useApi(`/alerts/${alertId}/status`, { method: 'PATCH', body: { status: 'resolved' } })
+  await $api.alertsIdStatus(alertId, { status: 'resolved' })
   refresh()
 }
 </script>

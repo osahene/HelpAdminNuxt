@@ -1,6 +1,5 @@
 // stores/contacts.ts
 import { defineStore } from 'pinia'
-import { useApi } from '~/composables/useApi'
 import type { Contact } from '~/types/index'
 
 interface ContactsState {
@@ -32,11 +31,12 @@ export const useContactsStore = defineStore('contacts', {
     async fetchContacts(filters: Record<string, any> = {}) {
       this.loading = true
       try {
-        const { data } = await useApi('/admin/contacts', {
-          params: { ...filters, page: this.pagination.currentPage }
-        })
-        this.contacts = data.value.data
-        this.pagination = data.value.pagination
+        const { $api } = useNuxtApp();
+        const { data } = await $api.contacts({ params: { ...filters, page: this.pagination.currentPage } })
+        
+        const value = data?.value
+        this.contacts = value?.data ?? []
+        this.pagination = value?.pagination ?? this.pagination
       } finally {
         this.loading = false
       }
@@ -45,21 +45,25 @@ export const useContactsStore = defineStore('contacts', {
     async fetchContact(id: string) {
       this.loading = true
       try {
-        const { data } = await useApi(`/admin/contacts/${id}`)
-        this.selectedContact = data.value
-        return data.value
+        const { $api } = useNuxtApp();
+        const { data } = await $api.contactsId(id)
+        const value = data?.value
+        this.selectedContact = value ?? null
+        return value
       } finally {
         this.loading = false
       }
     },
 
     async inviteContact(id: string) {
-      await useApi(`/admin/contacts/${id}/invite`, { method: 'POST' })
+      const { $api } = useNuxtApp();
+      await $api.inviteContact(id)
       // Optionally refresh contact or show success message
     },
 
     async resendInvite(id: string) {
-      await useApi(`/admin/contacts/${id}/resend-invite`, { method: 'POST' })
+      const { $api } = useNuxtApp();
+      await $api.resendInvite(id)
     },
 
     clearSelectedContact() {

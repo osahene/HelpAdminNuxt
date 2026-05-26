@@ -1,7 +1,6 @@
 <template>
   <div class="space-y-5">
 
-    <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-xl font-bold text-slate-900 dark:text-white">Marketing Campaigns</h1>
@@ -16,7 +15,6 @@
       </NuxtLink>
     </div>
 
-    <!-- Summary stats row -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div v-for="stat in summaryStats" :key="stat.label" class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm px-4 py-3.5">
         <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ stat.label }}</p>
@@ -24,7 +22,6 @@
       </div>
     </div>
 
-    <!-- Campaigns table -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
       <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
         <div class="flex items-center gap-2">
@@ -74,10 +71,8 @@
       </DataTable>
     </div>
 
-    <!-- ===== SLIDE-OVER DETAIL PANEL ===== -->
     <TransitionRoot as="template" :show="selectedCampaign !== null">
       <Dialog as="div" class="relative z-50" @close="selectedCampaign = null">
-        <!-- Backdrop -->
         <TransitionChild
           as="template"
           enter="ease-in-out duration-300" enter-from="opacity-0" enter-to="opacity-100"
@@ -101,7 +96,6 @@
                 <DialogPanel class="pointer-events-auto w-screen max-w-md">
                   <div class="flex h-full flex-col bg-white dark:bg-slate-800 shadow-2xl overflow-y-auto">
 
-                    <!-- Panel header -->
                     <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                       <div class="flex items-center gap-2.5">
                         <div class="h-7 w-7 rounded-lg bg-sky-100 dark:bg-sky-500/15 flex items-center justify-center shrink-0">
@@ -124,11 +118,10 @@
 
                     <div v-if="selectedCampaign" class="flex-1 px-5 py-5 space-y-6">
 
-                      <!-- Meta info -->
                       <div class="grid grid-cols-2 gap-4">
                         <div>
                           <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Audience</dt>
-                          <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ audienceLabel(selectedCampaign.recipientType) }}</dd>
+                          <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ audienceLabel(selectedCampaign.recipient_type || selectedCampaign.recipientType) }}</dd>
                         </div>
                         <div>
                           <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Channels</dt>
@@ -141,15 +134,14 @@
                         </div>
                         <div>
                           <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Sent At</dt>
-                          <dd class="mt-1 text-sm text-slate-700 dark:text-slate-300">{{ selectedCampaign.sentAt ? new Date(selectedCampaign.sentAt).toLocaleString() : 'Draft' }}</dd>
+                          <dd class="mt-1 text-sm text-slate-700 dark:text-slate-300">{{ (selectedCampaign.sent_at || selectedCampaign.sentAt) ? new Date(selectedCampaign.sent_at || selectedCampaign.sentAt).toLocaleString() : 'Draft' }}</dd>
                         </div>
                         <div>
                           <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Created</dt>
-                          <dd class="mt-1 text-sm text-slate-700 dark:text-slate-300">{{ selectedCampaign.createdAt ? new Date(selectedCampaign.createdAt).toLocaleDateString() : '—' }}</dd>
+                          <dd class="mt-1 text-sm text-slate-700 dark:text-slate-300">{{ (selectedCampaign.created_at || selectedCampaign.createdAt) ? new Date(selectedCampaign.created_at || selectedCampaign.createdAt).toLocaleDateString() : '—' }}</dd>
                         </div>
                       </div>
 
-                      <!-- Delivery stats -->
                       <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">Delivery Statistics</p>
                         <div class="grid grid-cols-3 gap-2">
@@ -167,7 +159,6 @@
                           </div>
                         </div>
 
-                        <!-- Delivery rate bar -->
                         <div v-if="selectedCampaign.stats?.sent" class="mt-3">
                           <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
                             <span>Delivery rate</span>
@@ -179,7 +170,6 @@
                         </div>
                       </div>
 
-                      <!-- Message preview -->
                       <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Message Preview</p>
                         <div class="bg-slate-50 dark:bg-slate-700/60 rounded-xl p-4 border border-slate-200/80 dark:border-slate-600/60">
@@ -190,7 +180,6 @@
 
                     </div>
 
-                    <!-- Panel footer -->
                     <div class="px-5 py-4 border-t border-slate-100 dark:border-slate-700 flex gap-2">
                       <button class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-all">
                         <ArrowPathIcon class="h-3.5 w-3.5" />
@@ -221,15 +210,19 @@ import DataTable from '~/components/admin/DataTable.vue'
 
 definePageMeta({ layout: 'admin' })
 
+// Grab custom injected API plugin mapping properties
+const { $api } = useNuxtApp()
+
 const campaigns = ref<any[]>([])
 const loading = ref(false)
 const selectedCampaign = ref<any>(null)
 
+// Support dynamic formatting with safe case key mapping fallback
 const columns = [
   { key: 'name', label: 'Campaign' },
   { key: 'channels', label: 'Channels' },
-  { key: 'recipientType', label: 'Audience', format: (v: string) => audienceLabel(v) },
-  { key: 'sentAt', label: 'Sent', format: (v: string) => v ? new Date(v).toLocaleDateString() : 'Draft' },
+  { key: 'recipient_type', label: 'Audience', format: (v: string) => audienceLabel(v) },
+  { key: 'sent_at', label: 'Sent', format: (v: string) => v ? new Date(v).toLocaleDateString() : 'Draft' },
   { key: 'status', label: 'Status' },
   { key: 'stats', label: 'Delivery' },
 ]
@@ -268,11 +261,19 @@ const openCampaignDetail = (campaign: any) => {
   selectedCampaign.value = campaign
 }
 
+// Rewritten custom function to call $api.campaignsList()
 const fetchCampaigns = async () => {
   loading.value = true
-  const { data } = await useApi('/admin/campaigns')
-  campaigns.value = data.value ?? []
-  loading.value = false
+  try {
+    const response = await $api.campaignsList()
+    // Check if paginated or direct array data payload returned
+    campaigns.value = response.data?.results || response.data || []
+  } catch (error) {
+    console.error('Error loading analytics marketing campaigns:', error)
+    campaigns.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(fetchCampaigns)

@@ -198,6 +198,8 @@ import DataTable from '~/components/admin/DataTable.vue'
 
 definePageMeta({ layout: 'admin' })
 
+const { $api } = useNuxtApp()
+
 const filters = reactive({
   search: '',
   type: '',
@@ -277,7 +279,7 @@ const formatResponseTime = (alert: any) => {
 
 const fetchAlerts = async () => {
   loading.value = true
-  const { data } = await useApi('/admin/alerts', {
+  const { data } = await $api.alerts({
     params: { ...filters, page: pagination.value.currentPage }
   })
   alerts.value = data.value?.data ?? []
