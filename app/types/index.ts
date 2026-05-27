@@ -1,11 +1,15 @@
 export interface User {
-  id: string
-  name: string
+id: string
   email: string
-  phone: string
-  createdAt: string
-  contactCount: number
-  contacts: Contact[]
+  first_name: string
+  last_name: string
+  name: string            // Provided by get_full_name / serializer method field
+  phone_number: string    // Mapped from backend model schema
+  is_active: boolean
+  role?: string
+  created_at: string      // Mapped from backend models
+  contact_count?: number
+  contacts?: Contact[]
 }
 
 export interface DashboardStats {
@@ -41,18 +45,34 @@ export interface Contact {
   createdAt: string
 }
 
+export interface AlertContactDetail {
+  id: string
+  name: string
+  phone: string
+  notificationStatus: string  // Maps from code base definitions fallback
+  verifiedAt: string | null
+  token?: string
+}
+
 export interface Alert {
   id: string
   type: 'robbery' | 'health' | 'fire' | 'flood' | 'violence'
-  userId: string
-  user?: User
+  action?: string             // Handled directly inside backend views
+  status: 'active' | 'resolved' | 'false_alarm'
+  userId?: string
+  user?: {
+    id: string
+    name: string
+    phone: string
+    email: string
+  }
   location?: {
-    coordinates: { lat: number; lng: number }
+    coordinates?: { lat: number; lng: number }
     address: string
   }
-  createdAt: string
-  agencyNotifiedAt?: string
-  agencyArrivedAt?: string
-  contactsNotified: string[]
-  status: 'active' | 'resolved' | 'false_alarm'
+  agency_notified_at?: string
+  agency_arrived_at?: string
+  resolved_at?: string
+  created_at: string
+  contacts_notified_details?: AlertContactDetail[]
 }

@@ -21,34 +21,62 @@ export const useAnalyticsStore = defineStore('analytics', {
     async fetchDashboardData() {
       this.loading = true
       try {
-         const { $api } = useNuxtApp(); // Get the API service from Nuxt context
-        const { data } = await $api.dashboardData();
-        if (data.value) {
-          this.stats = data.value.stats
-          this.alertsByType = data.value.alertsByType
-          this.responseTimeTrend = data.value.responseTimeTrend
-          this.userGrowth = data.value.userGrowth
-          this.recentAlerts = data.value.recentAlerts
+        const { $api } = useNuxtApp()
+        const response = await $api.dashboardData()
+        
+        // Extract raw payload data safely across plugin variants
+        const payload = response?.data || response
+
+        if (payload) {
+          this.stats = {
+            activeAlerts: payload.stats?.activeAlerts ?? 0,
+            totalUsers: payload.stats?.totalUsers ?? 0,
+            avgResponseTime: payload.stats?.avgResponseTime ?? 0,
+            avgContactsPerUser: payload.stats?.avgContactsPerUser ?? 0
+          }
+          this.alertsByType = payload.alertsByType ?? []
+          this.responseTimeTrend = payload.responseTimeTrend ?? []
+          this.userGrowth = payload.userGrowth ?? []
+          this.recentAlerts = payload.recentAlerts ?? []
+          
+          // Hydrate map elements with initial dashboard active entries safely
+          if (payload.activeAlerts) {
+            this.activeAlerts = payload.activeAlerts
+          }
         }
+      } catch (error) {
+        console.error('Failed processing analytics dashboard payload sync:', error)
       } finally {
         this.loading = false
       }
     },
     async fetchActiveAlerts() {
-      const { $api } = useNuxtApp();
-      const { data } = await $api.alertsActive();
-      if (data.value) {
-        this.activeAlerts = data.value
+      try {
+        const { $api } = useNuxtApp()
+        const response = await $api.alertsActive()
+        
+        const payload = response?.data || response
+        this.activeAlerts = Array.isArray(payload) ? payload : (payload?.results ?? [])
+      } catch (error) {
+        console.error('Failed refreshing isolated active system notifications:', error)
       }
     },
     addNewAlert(alert: Alert) {
-      this.activeAlerts.unshift(alert)
-      this.stats.activeAlerts++
+      const exists = this.activeAlerts.some(a => a.id === alert.id)
+      if (!exists) {
+        this.activeAlerts.unshift(alert)
+        this.stats.activeAlerts++
+      }
     },
     updateAlert(updatedAlert: Alert) {
       const index = this.activeAlerts.findIndex(a => a.id === updatedAlert.id)
       if (index !== -1) {
-        this.activeAlerts[index] = updatedAlert
+        this.activeAlerts[index] = { ...this.activeAlerts[index], ...updatedAlert }
+      }
+      
+      const recentIndex = this.recentAlerts.findIndex(a => a.id === updatedAlert.id)
+      if (recentIndex !== -1) {
+        this.recentAlerts[recentIndex] = { ...this.recentAlerts[recentIndex], ...updatedAlert }
       }
     }
   }

@@ -1,14 +1,17 @@
 // stores/auth.ts
 import { defineStore } from 'pinia'
 
-
+// Maps cleanly against fields transmitted by AdminUserSerializer
 interface User {
   id: string
-  name: string
   email: string
+  first_name: string
+  last_name: string
+  name: string
   role: 'super_admin' | 'admin' | 'moderator' | 'analyst'
-  emailVerified: boolean
+  email_verified: boolean
   authorised: boolean
+  created_at: string
 }
 
 interface AuthState {
@@ -30,68 +33,90 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: (state) => !!state.token,
-    isAdmin: (state) => state.user?.role === 'admin'
+    isAdmin: (state) => state.user?.role === 'admin' || state.user?.role === 'super_admin'
   },
 
   actions: {
-    // ── Registration ──────────────────────────────────────────────────────────
+    // ── Registration Flow ───────────────────────────────────────────────────
     async register(payload: {
-      firstName: string
-      lastName: string
-      name: string
+      first_name: string
+      last_name: string
       role: string
       email: string
       password: string
+      confirm_password: string
     }) {
-      const { $api } = useNuxtApp()  // ← get $api inside the action
-      const { data } = await $api.register(payload)
-      return data.value
+      const { $api } = useNuxtApp()
+      const response = await $api.register(payload)
+      return response?.data || response
     },
 
-    // ── Email verification ────────────────────────────────────────────────────
+    // ── Verification Subsystem ──────────────────────────────────────────────
     async verifyEmail(payload: { email: string; code: string }) {
       const { $api } = useNuxtApp()
-      const { data } = await $api.verifyEmail(payload)
-      return data.value
+      const response = await $api.verifyEmail(payload)
+      return response?.data || response
     },
 
     async resendEmailVerification(email: string) {
       const { $api } = useNuxtApp()
-      await $api.resendPin(email)
+      // Maps to /trap_admin/resend-pin/ via request data parsing
+      const response = await $api.resendPin({ email })
+      return response?.data || response
     },
 
-    // ── Admin authorization PIN ───────────────────────────────────────────────
+    // ── Security Authorization Verification ───────────────────────────────
     async verifyAuthPin(payload: { email: string; pin: string }) {
       const { $api } = useNuxtApp()
-      const { data } = await $api.verifyPin(payload)
-      return data.value
+      const response = await $api.verifyPin(payload)
+      return response?.data || response
     },
 
     async resendAuthPin(email: string) {
       const { $api } = useNuxtApp()
-      await $api.resendPin(email)
+      const response = await $api.resendPin({ email })
+      return response?.data || response
     },
 
-    async login(credentials: { email: string; password: string; remember: boolean }) {
-      const { $api } = useNuxtApp()
+    // ── Active Core Login Routine ──────────────────────────────────────────
+    async login(credentials: { email: string; password: string; remember?: boolean }) {
       this.loading = true
       try {
-        const { data } = await $api.login(credentials)
-        this.token = data.value.token
-        this.user = data.value.user
+        const { $api } = useNuxtApp()
+        const response = await $api.login(credentials)
+        const payload = response?.data || response
 
-        if (process.client) {
-          localStorage.setItem('auth_token', this.token as string)
-          localStorage.setItem('auth_user', JSON.stringify(this.user))
+        if (payload?.token) {
+          this.token = payload.token
+          this.refresh = payload.refresh ?? null
+          this.user = payload.user ?? null
+
+          // Sync auth state locally if client conditions match
+          if (process.client) {
+            localStorage.setItem('auth_token', this.token as string)
+            if (this.refresh) {
+              localStorage.setItem('refresh_token', this.refresh)
+            }
+            localStorage.setItem('auth_user', JSON.stringify(this.user))
+          }
+
+          // Maintain cross-tab or service-side cookie persistence state rules
+          const tokenCookie = useCookie('safelink_token', { maxAge: credentials.remember ? 60 * 60 * 24 * 7 : undefined })
+          tokenCookie.value = this.token
         }
+        return payload
+      } catch (error) {
+        console.error('Login action authentication failure:', error)
+        this.clearAuth()
+        throw error
       } finally {
         this.loading = false
       }
     },
 
-    // ── Restore session on page load ──────────────────────────────────────────
+    // ── Restore User Sessions On Initial Lifecycle Hook ────────────────────
     async fetchUser() {
-      const { $api } = useNuxtApp()
+      // Pull access tokens out of cookie states if state context re-initializes
       if (!this.token) {
         const tokenCookie = useCookie<string | null>('safelink_token')
         this.token = tokenCookie.value ?? null
@@ -103,38 +128,50 @@ export const useAuthStore = defineStore('auth', {
       }
 
       try {
-        const { data } = await $api.me({ token: this.token })
-        this.user = data.value ?? null
-      } catch {
+        const { $api } = useNuxtApp()
+        const response = await $api.me()
+        this.user = response?.data || response
+      } catch (error) {
+        console.error('Session restoration request dropped:', error)
         this.clearAuth()
       } finally {
         this.isHydrated = true
       }
     },
 
+    // ── Logout Breakdown Sequence ───────────────────────────────────────────
     async logout() {
-      const { $api } = useNuxtApp()
-      this.refresh = localStorage.getItem('refresh_token') ?? null
-      await $api.logout({ refresh: this.refresh })
-      this.token = null
-      this.user = null
-      if (process.client) {
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('auth_user')
+      try {
+        const { $api } = useNuxtApp()
+        if (process.client && !this.refresh) {
+          this.refresh = localStorage.getItem('refresh_token')
+        }
+        
+        if (this.refresh) {
+          await $api.logout({ refresh: this.refresh })
+        }
+      } catch (error) {
+        console.warn('API logout blacklist call bypassed during core local state reduction:', error)
+      } finally {
+        this.clearAuth()
+        await navigateTo('/auth/login')
       }
-      await navigateTo('/auth/login')
     },
 
+    // ── Synchronous Storage Hydration Hooks ─────────────────────────────────
     initializeFromStorage() {
       if (process.client) {
         const token = localStorage.getItem('auth_token')
+        const refresh = localStorage.getItem('refresh_token')
         const user = localStorage.getItem('auth_user')
+        
         if (token && user) {
           this.token = token
+          this.refresh = refresh
           try {
             this.user = JSON.parse(user)
           } catch {
-            this.logout()
+            this.clearAuth()
           }
         }
       }
@@ -143,8 +180,16 @@ export const useAuthStore = defineStore('auth', {
     clearAuth() {
       this.user = null
       this.token = null
+      this.refresh = null
+      
+      if (process.client) {
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('refresh_token')
+        localStorage.removeItem('auth_user')
+      }
+
       const tokenCookie = useCookie('safelink_token')
       tokenCookie.value = null
-    },
+    }
   }
 })
