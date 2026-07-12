@@ -159,7 +159,7 @@
       <div class="flex items-center justify-between px-5 py-3.5 border-t border-slate-100 dark:border-slate-700">
         <p class="text-xs text-slate-500 dark:text-slate-400">
           Showing
-          <span class="font-medium text-slate-700 dark:text-slate-300">{{ pagination.from }}–{{ pagination.to }}</span>
+          <span class="font-medium text-slate-700 dark:text-slate-300">{{ displayFrom }}–{{ displayTo }}</span>
           of
           <span class="font-medium text-slate-700 dark:text-slate-300">{{ pagination.total }}</span>
           alerts
@@ -190,15 +190,20 @@
 </template>
 
 <script setup lang="ts">
+import { reactive, computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import {
   MagnifyingGlassIcon, FunnelIcon, ArrowDownTrayIcon,
   BellAlertIcon, MapPinIcon, ChevronLeftIcon, ChevronRightIcon
 } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
+import { useAlertsStore } from '~/stores/alerts'
 
 definePageMeta({ layout: 'admin' })
 
-const { $api } = useNuxtApp()
+// 1. Initialize Store
+const alertsStore = useAlertsStore()
+const { alerts, loading, pagination } = storeToRefs(alertsStore)
 
 const filters = reactive({
   search: '',
@@ -207,11 +212,11 @@ const filters = reactive({
   dateRange: { start: null as Date | null, end: null as Date | null }
 })
 
-const pagination = ref({ currentPage: 1, totalPages: 1, from: 0, to: 0, total: 0 })
-const alerts = ref<any[]>([])
-const loading = ref(false)
-
 const hasActiveFilters = computed(() => filters.search || filters.type || filters.status)
+
+// 2. Computed Pagination Helpers
+const displayFrom = computed(() => pagination.value.total === 0 ? 0 : (pagination.value.currentPage - 1) * pagination.value.perPage + 1)
+const displayTo = computed(() => Math.min(pagination.value.total, pagination.value.currentPage * pagination.value.perPage))
 
 const alertTypes = [
   { value: '', label: 'All', dot: 'bg-slate-400', activePill: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200', count: null },
@@ -277,29 +282,30 @@ const formatResponseTime = (alert: any) => {
   return `${Math.floor(diff / 60000)}m ${Math.floor((diff % 60000) / 1000)}s`
 }
 
-const fetchAlerts = async () => {
-  loading.value = true
-  const { data } = await $api.alerts({
-    params: { ...filters, page: pagination.value.currentPage }
-  })
-  alerts.value = data.value?.data ?? []
-  pagination.value = data.value?.pagination ?? pagination.value
-  loading.value = false
+// 3. Delegation Methods
+const loadAlerts = async () => {
+  const apiParams = {
+    search: filters.search || undefined,
+    type: filters.type || undefined,
+    status: filters.status || undefined,
+  }
+  await alertsStore.fetchAlerts(apiParams)
 }
 
 const applyFilters = () => {
   pagination.value.currentPage = 1
-  fetchAlerts()
+  loadAlerts()
 }
 
 const changePage = (page: number) => {
+  if (page < 1 || page > pagination.value.totalPages) return
   pagination.value.currentPage = page
-  fetchAlerts()
+  loadAlerts()
 }
 
 const exportAlerts = () => {
   window.open(`/api/admin/alerts/export?${new URLSearchParams(filters as any).toString()}`, '_blank')
 }
 
-onMounted(fetchAlerts)
+onMounted(loadAlerts)
 </script>

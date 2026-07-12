@@ -181,21 +181,21 @@
               </td>
 
               <td class="px-5 py-3.5 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                {{ formatDistanceToNow(new Date(alert.createdAt)) }} ago
+                {{ formatDistanceToNow(new Date(alert.created_at)) }} ago
               </td>
 
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <span
                   class="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full"
-                  :class="alert.agencyNotifiedAt
+                  :class="alert.agency_notified_at
                     ? 'text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10'
                     : 'text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10'"
                 >
                   <span
                     class="h-1.5 w-1.5 rounded-full"
-                    :class="alert.agencyNotifiedAt ? 'bg-emerald-500' : 'bg-amber-500'"
+                    :class="alert.agency_notified_at ? 'bg-emerald-500' : 'bg-amber-500'"
                   ></span>
-                  {{ alert.agencyNotifiedAt ? 'Notified' : 'Pending' }}
+                  {{ alert.agency_notified_at ? 'Notified' : 'Pending' }}
                 </span>
               </td>
 
@@ -243,11 +243,10 @@ definePageMeta({ layout: 'admin' })
 
 const analyticsStore = useAnalyticsStore()
 const { stats, activeAlerts, alertsByType, responseTimeTrend, userGrowth, recentAlerts } = storeToRefs(analyticsStore)
-
 const today = computed(() => format(new Date(), 'EEEE, d MMMM yyyy'))
 
-const formatTime = (seconds: number) => {
-  if (!seconds) return 'N/A'
+const formatTime = (seconds: number | null | undefined) => {
+  if (seconds === null || seconds === undefined) return 'N/A'
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins}m ${secs}s`
@@ -281,11 +280,12 @@ const getInitials = (name?: string) => {
 }
 
 const alertTypeConfig: Record<string, { pill: string; dot: string }> = {
-  robbery: { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500' },
-  health: { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
-  fire: { pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500' },
-  flood: { pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500' },
-  violence: { pill: 'text-purple-700 bg-purple-50 dark:text-purple-300 dark:bg-purple-500/10', dot: 'bg-purple-500' },
+  'Robbery Attack': { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500' },
+  'Health Crisis': { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
+  'Fire Outbreak': { pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500' },
+  'Flood Alert': { pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500' },
+  'Violence Alert': { pill: 'text-purple-700 bg-purple-50 dark:text-purple-300 dark:bg-purple-500/10', dot: 'bg-purple-500' },
+  'Call Emergency': { pill: 'text-yellow-700 bg-yellow-50 dark:text-yellow-300 dark:bg-yellow-500/10', dot: 'bg-yellow-500' },
 }
 
 const alertTypeBadgeClass = (type: string) => {
@@ -298,8 +298,17 @@ const alertTypeDotClass = (type: string) => alertTypeConfig[type]?.dot ?? 'bg-sl
 const handleAlertClick = (alert: Alert) => navigateTo(`/alerts/${alert.id}`)
 const refreshMap = () => analyticsStore.fetchActiveAlerts()
 
-onMounted(() => {
-  analyticsStore.fetchDashboardData()
+onMounted(async () => {
+  try {
+    await analyticsStore.fetchDashboardData()
+    console.log('Dashboard data successfully loaded:', {
+      stats: stats.value,
+      recentAlerts: recentAlerts.value
+    })
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error)
+  }
+  
   useRealtime('alert:new', (payload) => analyticsStore.addNewAlert(payload))
   useRealtime('alert:updated', (payload) => analyticsStore.updateAlert(payload))
 })

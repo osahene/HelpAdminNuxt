@@ -1,4 +1,3 @@
-// stores/alerts.ts
 import { defineStore } from 'pinia'
 import type { Alert } from '~/types'
 
@@ -7,38 +6,52 @@ export const useAlertsStore = defineStore('alerts', {
     alerts: [] as Alert[],
     selectedAlert: null as Alert | null,
     activeAlertCount: 0,
+    pagination: {
+      currentPage: 1,
+      totalPages: 1,
+      total: 0,
+      perPage: 20
+    },
     loading: false,
   }),
 
   actions: {
-    /**
-     * Fetches paginated list of alerts based on type, status or date ranges
-     */
     async fetchAlerts(filters: Record<string, any> = {}) {
       this.loading = true
       try {
         const { $api } = useNuxtApp()
-        const response = await $api.alerts({ params: filters })
+        
+        const queryParams = {
+          ...filters,
+          page: this.pagination.currentPage
+        }
+        
+        const response = await $api.alerts({ params: queryParams })
         const payload = response?.data || response
         
-        // DRF standard paginated envelope check
-        this.alerts = payload && 'results' in payload ? payload.results : (payload || [])
+        if (payload && 'results' in payload) {
+          this.alerts = payload.results ?? []
+          this.pagination.total = payload.count ?? this.alerts.length
+          this.pagination.totalPages = Math.max(1, Math.ceil(this.pagination.total / this.pagination.perPage))
+        } else {
+          this.alerts = Array.isArray(payload) ? payload : []
+          this.pagination.total = this.alerts.length
+          this.pagination.totalPages = 1
+        }
       } catch (error) {
         console.error('Failed fetching core alerts index collection:', error)
         this.alerts = []
+        this.pagination.total = 0
       } finally {
         this.loading = false
       }
     },
 
-    /**
-     * Retrieves an isolated alert event by UUID/ID string
-     */
     async fetchAlertById(alertId: string) {
       this.loading = true
       try {
         const { $api } = useNuxtApp()
-        const response = await $api.alerts({ alertId })
+        const response = await $api.alertsId(alertId) // Fixed API key usage
         this.selectedAlert = response?.data || response
         return this.selectedAlert
       } catch (error) {
@@ -50,15 +63,9 @@ export const useAlertsStore = defineStore('alerts', {
       }
     },
 
-    /**
-     * Patches emergency dispatch response timestamps 
-     * Target backend endpoint expects: PATCH /trap_admin/alerts/<id>/response-time/
-     */
     async updateResponseTimes(alertId: string, times: { agencyNotifiedAt: string; agencyArrivedAt: string }) {
       try {
         const { $api } = useNuxtApp()
-        
-        // Normalize payload mapping values to match Django fields
         const payload = {
           agency_notified_at: times.agencyNotifiedAt || null,
           agency_arrived_at: times.agencyArrivedAt || null
@@ -77,21 +84,10 @@ export const useAlertsStore = defineStore('alerts', {
       }
     },
 
-    /**
-     * Updates alert lifecycle states (active -> resolved / false_alarm)
-     * Target backend endpoint expects: PATCH /trap_admin/alerts/<id>/status/
-     */
     async updateAlertStatus(alertId: string, status: 'resolved' | 'false_alarm' | 'active') {
       try {
         const { $api } = useNuxtApp()
         
-        // Matches body expectations parsed inside Django's serializer context
-        const payload = {
-          alert_id: alertId,
-          status: status
-        }
-        
-        // pass alertId as first argument and payload as second to match API signature
         const response = await $api.alertsIdStatus(alertId, status)
         const updatedAlert = response?.data || response
         

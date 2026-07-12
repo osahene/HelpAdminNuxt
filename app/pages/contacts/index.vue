@@ -113,7 +113,7 @@
       <div class="flex items-center justify-between px-5 py-3.5 border-t border-slate-100 dark:border-slate-700">
         <p class="text-xs text-slate-500 dark:text-slate-400">
           Showing
-          <span class="font-medium text-slate-700 dark:text-slate-300">{{ pagination.from }}–{{ pagination.to }}</span>
+          <span class="font-medium text-slate-700 dark:text-slate-300">{{ displayFrom }}–{{ displayTo }}</span>
           of <span class="font-medium text-slate-700 dark:text-slate-300">{{ pagination.total }}</span>
         </p>
         <div class="flex items-center gap-1">
@@ -135,21 +135,25 @@
 </template>
 
 <script setup lang="ts">
+import { reactive, computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import {
   MagnifyingGlassIcon, FunnelIcon, ArrowDownTrayIcon,
   PhoneIcon, CheckCircleIcon, ChevronLeftIcon, ChevronRightIcon
 } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
 import type { Contact } from '~/types'
+import { useContactsStore } from '~/stores/contacts'
 
 definePageMeta({ layout: 'admin' })
 
-const { $api } = useNuxtApp()
+const contactsStore = useContactsStore()
+const { contacts, loading, pagination } = storeToRefs(contactsStore)
 
 const filters = reactive({ search: '', status: '', isUser: '' })
-const pagination = ref({ currentPage: 1, totalPages: 1, from: 0, to: 0, total: 0 })
-const contacts = ref<Contact[]>([])
-const loading = ref(false)
+
+const displayFrom = computed(() => pagination.value.total === 0 ? 0 : (pagination.value.currentPage - 1) * pagination.value.perPage + 1)
+const displayTo = computed(() => Math.min(pagination.value.total, pagination.value.currentPage * pagination.value.perPage))
 
 const columns = [
   { key: 'name', label: 'Name' },
@@ -173,24 +177,39 @@ const statusConfig: Record<string, { pill: string; dot: string }> = {
   pending:  { pill: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10', dot: 'bg-amber-500' },
   rejected: { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500' },
 }
+
 const statusBadge = (s: string) =>
   `inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${statusConfig[s]?.pill ?? 'text-slate-600 bg-slate-100 dark:bg-slate-700'}`
 const statusDot = (s: string) => statusConfig[s]?.dot ?? 'bg-slate-400'
 
-const fetchContacts = async () => {
-  loading.value = true
-  const { data } = await $api.contacts({
-    params: { ...filters, page: pagination.value.currentPage }
-  })
-  contacts.value = data.value?.data ?? []
-  pagination.value = data.value?.pagination ?? pagination.value
-  loading.value = false
+// 3. Store Delegation Methods
+const loadContacts = async () => {
+  const apiParams = {
+    search: filters.search || undefined,
+    status: filters.status || undefined,
+    isUser: filters.isUser || undefined,
+  }
+  await contactsStore.fetchContacts(apiParams)
 }
 
-const applyFilters = () => { pagination.value.currentPage = 1; fetchContacts() }
-const changePage = (p: number) => { pagination.value.currentPage = p; fetchContacts() }
-const inviteContact = async (contact: Contact) => { await $api.inviteContact({ contactId: contact.id }) }
-const resendInvite = async (id: string) => { await $api.resendInvite({ contactId: id }) }
+const applyFilters = () => { 
+  pagination.value.currentPage = 1
+  loadContacts() 
+}
 
-onMounted(fetchContacts)
+const changePage = (p: number) => { 
+  if (p < 1 || p > pagination.value.totalPages) return
+  pagination.value.currentPage = p
+  loadContacts() 
+}
+
+const inviteContact = async (contact: Contact) => { 
+  await contactsStore.inviteContact(contact.id) 
+}
+
+const resendInvite = async (id: string) => { 
+  await contactsStore.resendInvite(id) 
+}
+
+onMounted(loadContacts)
 </script>

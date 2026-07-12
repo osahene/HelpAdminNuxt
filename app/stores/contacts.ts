@@ -1,21 +1,9 @@
 import { defineStore } from 'pinia'
-import type { Contact } from '~/types/index'
-
-interface ContactsState {
-  contacts: Contact[]
-  selectedContact: Contact | null
-  pagination: {
-    currentPage: number
-    totalPages: number
-    total: number
-    perPage: number
-  }
-  loading: boolean
-}
+import type { Contact, ContactsState } from '~/types/index'
 
 export const useContactsStore = defineStore('contacts', {
   state: (): ContactsState => ({
-    contacts: [],
+    contacts: [] as Contact[],
     selectedContact: null,
     pagination: {
       currentPage: 1,

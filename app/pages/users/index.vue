@@ -133,22 +133,29 @@
 </template>
 
 <script setup lang="ts">
-import { MagnifyingGlassIcon, FunnelIcon, ArrowDownTrayIcon, UsersIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
+import { 
+  MagnifyingGlassIcon, 
+  FunnelIcon, 
+  ArrowDownTrayIcon, 
+  UsersIcon, 
+  ChevronLeftIcon, 
+  ChevronRightIcon 
+} from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
+import { useUsersStore } from '~/stores/users'
 
 definePageMeta({ layout: 'admin' })
 
-const { $api } = useNuxtApp()
+// 1. Initialize the Pinia Store and extract reactive state variables
+const usersStore = useUsersStore()
+const { users, loading, pagination } = storeToRefs(usersStore)
 
-// Component Tracking State
-const filters = reactive({ search: '', coverageStatus: '' })
-const users = ref<any[]>([])
-const loading = ref(false)
-const pageSize = ref(20) // Configured default pagination chunk sizing
-
-const pagination = ref({
-  currentPage: 1,
-  total: 0
+// 2. Local filter layout state stays local to the component UI context
+const filters = reactive({ 
+  search: '', 
+  coverageStatus: '' 
 })
 
 // Column configurations maps key metrics with case fallbacks included
@@ -161,10 +168,10 @@ const columns = [
   { key: 'actions', label: '' },
 ]
 
-// Computing pagination labels dynamically prevents layout breakdown anomalies
-const totalPagesCalculated = computed(() => Math.max(1, Math.ceil(pagination.value.total / pageSize.value)))
-const displayFrom = computed(() => pagination.value.total === 0 ? 0 : (pagination.value.currentPage - 1) * pageSize.value + 1)
-const displayTo = computed(() => Math.min(pagination.value.total, pagination.value.currentPage * pageSize.value))
+// 3. Computed properties mapping directly to the central store state
+const totalPagesCalculated = computed(() => pagination.value.totalPages)
+const displayFrom = computed(() => pagination.value.total === 0 ? 0 : (pagination.value.currentPage - 1) * pagination.value.perPage + 1)
+const displayTo = computed(() => Math.min(pagination.value.total, pagination.value.currentPage * pagination.value.perPage))
 
 const getInitials = (name?: string) => {
   if (!name) return '?'
@@ -178,52 +185,33 @@ const coverageColor = (count: number) => {
   return 'text-red-500 dark:text-red-400'
 }
 
-// Rewritten Fetch Layer interacting directly with $api layer plugins
-const fetchUsers = async () => {
-  loading.value = true
-  try {
-    const params = {
-      search: filters.search || undefined,
-      coverage_status: filters.coverageStatus || undefined,
-      page: pagination.value.currentPage
-    }
-    
-    const response = await $api.users(params)
-    
-    // Evaluates both standard list returns or common paginated objects
-    if (response.data && typeof response.data === 'object' && 'results' in response.data) {
-      users.value = response.data.results ?? []
-      pagination.value.total = response.data.count ?? response.data.results.length
-    } else {
-      users.value = response.data ?? []
-      pagination.value.total = response.value?.length ?? users.value.length
-    }
-  } catch (error) {
-    console.error('Failed fetching core system user data records:', error)
-    users.value = []
-    pagination.value.total = 0
-  } finally {
-    loading.value = false
+// 4. Delegation Layer linking user events to the global actions
+const loadUsers = async () => {
+  // Map the local UI properties into the keys required by the backend API query parameter schema
+  const apiParams = {
+    search: filters.search || undefined,
+    coverage_status: filters.coverageStatus || undefined,
   }
+  await usersStore.fetchUsers(apiParams)
 }
 
 const applyFilters = () => {
   pagination.value.currentPage = 1
-  fetchUsers()
+  loadUsers()
 }
 
 const changePage = (newPage: number) => {
   if (newPage < 1 || newPage > totalPagesCalculated.value) return
   pagination.value.currentPage = newPage
-  fetchUsers()
+  loadUsers()
 }
 
 const sendReminder = async (userId: string) => {
   try {
-    await $api.usersIdRemindContacts(userId)
+    await usersStore.sendContactReminder(userId)
     // Add toast or success notification triggers here if available
   } catch (error) {
-    console.error(`Failed executing dynamic background notification task on id ${userId}:`, error)
+    console.error(`Failed executing administrative notification task on id ${userId}:`, error)
   }
 }
 
@@ -231,5 +219,6 @@ const exportUsers = () => {
   console.log('Export context called. Construct logic via browser file streams or link endpoints.')
 }
 
-onMounted(fetchUsers)
+// Fetch base array elements during page bootstrapping lifecycle
+onMounted(loadUsers)
 </script>

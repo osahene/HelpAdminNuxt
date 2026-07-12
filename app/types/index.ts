@@ -31,7 +31,17 @@ export interface DashboardResponse {
   recentAlerts: Alert[]
 }
 
-
+export interface ContactsState {
+  contacts: Contact[]
+  selectedContact: Contact | null
+  pagination: {
+    currentPage: number
+    totalPages: number
+    total: number
+    perPage: number
+  }
+  loading: boolean
+}
 
 export interface Contact {
   id: string
@@ -56,7 +66,7 @@ export interface AlertContactDetail {
 
 export interface Alert {
   id: string
-  type: 'robbery' | 'health' | 'fire' | 'flood' | 'violence'
+  type: 'Robbery Attack' | 'Health Crisis' | 'Fire Outbreak' | 'Flood Alert' | 'Violence Alert' | 'Call Emergency'
   action?: string             // Handled directly inside backend views
   status: 'active' | 'resolved' | 'false_alarm'
   userId?: string
@@ -66,10 +76,11 @@ export interface Alert {
     phone: string
     email: string
   }
-  location?: {
-    coordinates?: { lat: number; lng: number }
-    address: string
-  }
+  location?:{ latitude: number; 
+    longitude: number; 
+    address: string 
+  }   
+  
   agency_notified_at?: string
   agency_arrived_at?: string
   resolved_at?: string
