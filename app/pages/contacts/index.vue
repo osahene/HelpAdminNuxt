@@ -75,6 +75,10 @@
           </div>
         </template>
 
+        <template #cell-phone="{ row }">
+          <span>{{ row.country_code }}{{ row.phone_number }}</span>
+        </template>
+
         <template #cell-status="{ row }">
           <span :class="statusBadge(row.status)">
             <span :class="statusDot(row.status)" class="inline-block h-1.5 w-1.5 rounded-full mr-1.5"></span>
@@ -83,7 +87,7 @@
         </template>
 
         <template #cell-isUser="{ row }">
-          <span v-if="row.isUser" class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+          <span v-if="row.is_user" class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
             <CheckCircleIcon class="h-3.5 w-3.5" /> Yes
           </span>
           <span v-else class="text-xs text-slate-400">—</span>
@@ -92,7 +96,7 @@
         <template #cell-actions="{ row }">
           <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
-              v-if="!row.isUser"
+              v-if="!row.is_user"
               @click.stop="inviteContact(row)"
               class="text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 px-2 py-1 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors"
             >
@@ -158,11 +162,11 @@ const displayTo = computed(() => Math.min(pagination.value.total, pagination.val
 const columns = [
   { key: 'name', label: 'Name' },
   { key: 'phone', label: 'Phone' },
-  { key: 'email', label: 'Email' },
+  { key: 'relation', label: 'Relationship' },
   { key: 'status', label: 'Status' },
-  { key: 'isUser', label: 'Registered' },
-  { key: 'userName', label: 'Added By' },
-  { key: 'createdAt', label: 'Added On', format: (v: string) => v ? new Date(v).toLocaleDateString() : '—' },
+  { key: 'is_user', label: 'Registered' },
+  { key: 'added_by.name', label: 'Added By' },
+  { key: 'created_at', label: 'Added On', format: (v: string) => v ? new Date(v).toLocaleDateString() : '—' },
   { key: 'actions', label: '' },
 ]
 

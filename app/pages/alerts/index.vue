@@ -141,6 +141,14 @@
           </span>
         </template>
 
+        <!-- Status badge -->
+        <template #cell-agency_notified_at="{ row }">
+          <span :class="statusBadgeClass(row.agency_notified_at)">
+            <span :class="statusDotClass(row.agency_notified_at)" class="inline-block h-1.5 w-1.5 rounded-full mr-1.5"></span>
+            {{ statusLabel(row.agency_notified_at) }}
+          </span>
+        </template>
+
         <!-- Response time -->
         <template #cell-responseTime="{ row }">
           <span class="font-mono text-xs">{{ formatResponseTime(row) }}</span>
@@ -220,11 +228,12 @@ const displayTo = computed(() => Math.min(pagination.value.total, pagination.val
 
 const alertTypes = [
   { value: '', label: 'All', dot: 'bg-slate-400', activePill: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200', count: null },
-  { value: 'robbery', label: 'Robbery', dot: 'bg-red-500', activePill: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-400', count: null },
-  { value: 'health', label: 'Health', dot: 'bg-emerald-500', activePill: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400', count: null },
-  { value: 'fire', label: 'Fire', dot: 'bg-orange-500', activePill: 'bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400', count: null },
-  { value: 'flood', label: 'Flood', dot: 'bg-blue-500', activePill: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', count: null },
-  { value: 'violence', label: 'Violence', dot: 'bg-purple-500', activePill: 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400', count: null },
+  { value: 'robbery', label: 'Robbery Attack', dot: 'bg-red-500', activePill: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-400', count: null },
+  { value: 'health', label: 'Health Crisis', dot: 'bg-emerald-500', activePill: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400', count: null },
+  { value: 'fire', label: 'Fire Outbreak', dot: 'bg-orange-500', activePill: 'bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400', count: null },
+  { value: 'flood', label: 'Flood Alert', dot: 'bg-blue-500', activePill: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', count: null },
+  { value: 'violence', label: 'Violence Alert', dot: 'bg-purple-500', activePill: 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400', count: null },
+  { value: 'emergency', label: 'Call Emergency', dot: 'bg-purple-500', activePill: 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400', count: null },
 ]
 
 const columns = [
@@ -232,7 +241,7 @@ const columns = [
   { key: 'user.name', label: 'User' },
   { key: 'type', label: 'Type' },
   { key: 'location.address', label: 'Location' },
-  { key: 'createdAt', label: 'Time', format: (val: string) => val ? new Date(val).toLocaleString() : '—' },
+  { key: 'created_at', label: 'Time', format: (val: string) => val ? new Date(val).toLocaleString() : '—' },
   { key: 'status', label: 'Status' },
   { key: 'responseTime', label: 'Response' },
 ]
@@ -277,8 +286,8 @@ const statusDotClass = (s: string) => statusConfig[s]?.dot ?? 'bg-slate-400'
 const statusLabel = (s: string) => statusConfig[s]?.label ?? s
 
 const formatResponseTime = (alert: any) => {
-  if (!alert.agencyNotifiedAt) return 'N/A'
-  const diff = new Date(alert.agencyArrivedAt || Date.now()).getTime() - new Date(alert.agencyNotifiedAt).getTime()
+  if (!alert.agency_notified_at) return 'N/A'
+  const diff = new Date(alert.agency_arrived_at || Date.now()).getTime() - new Date(alert.agency_notified_at).getTime()
   return `${Math.floor(diff / 60000)}m ${Math.floor((diff % 60000) / 1000)}s`
 }
 

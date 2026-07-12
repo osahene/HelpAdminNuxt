@@ -128,6 +128,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 import {
   Bars3Icon, MagnifyingGlassIcon, BellIcon, SunIcon, MoonIcon,
@@ -136,6 +137,10 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useAuth } from '~/composables/useAuth'
 import { useDarkMode } from '~/composables/useDarkMode'
+import { useAnalyticsStore } from '~/stores/analytics'
+
+const analyticsStore = useAnalyticsStore()
+const { stats } = storeToRefs(analyticsStore)
 
 const emit = defineEmits<{
   (e: 'toggle-sidebar'): void
@@ -146,7 +151,7 @@ const { user, logout } = useAuth()
 const { isDark, toggle: toggleDarkMode } = useDarkMode()
 
 const searchQuery = ref('')
-const unreadNotifications = ref(3)
+const unreadNotifications = computed(() => stats.value.activeAlerts || 0)
 
 const currentPage = computed(() => {
   const parts = route.path.split('/').filter(Boolean)

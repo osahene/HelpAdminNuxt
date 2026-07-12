@@ -29,7 +29,7 @@
           <SidebarLink to="/alerts" icon="BellAlertIcon">
             Alerts
             <template #badge>
-              <span class="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white">3</span>
+              <span class="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white">{{ stats.activeAlerts }}</span>
             </template>
           </SidebarLink>
 
@@ -149,6 +149,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { Dialog, TransitionRoot, TransitionChild } from '@headlessui/vue'
 import { ArrowRightStartOnRectangleIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import SidebarLink from '~/components/admin/Sidebar.vue'
@@ -156,7 +157,11 @@ import AdminHeader from '~/components/admin/Header.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useAuth } from '~/composables/useAuth'
 import { useDarkMode } from '~/composables/useDarkMode'
+import {useAnalyticsStore} from '~/stores/analytics'
 
+
+const analyticsStore = useAnalyticsStore()
+const { stats } = storeToRefs(analyticsStore)
 const sidebarOpen = ref(false)
 const { user } = useAuth()
 const { isDark } = useDarkMode()

@@ -74,6 +74,9 @@
             </div>
           </div>
         </template>
+        <template #cell-phone="{ row }">
+          <span>{{ row.country_code }}{{ row.phone_number }}</span>
+        </template>
 
         <template #cell-contactCount="{ row }">
           <div class="flex items-center gap-2">

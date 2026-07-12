@@ -55,7 +55,6 @@ export const useAlertsStore = defineStore('alerts', {
         this.selectedAlert = response?.data || response
         return this.selectedAlert
       } catch (error) {
-        console.error(`Failed resolving target detail view context for alert ${alertId}:`, error)
         this.selectedAlert = null
         throw error
       } finally {
@@ -63,12 +62,12 @@ export const useAlertsStore = defineStore('alerts', {
       }
     },
 
-    async updateResponseTimes(alertId: string, times: { agencyNotifiedAt: string; agencyArrivedAt: string }) {
+    async updateResponseTimes(alertId: string, times: { agency_notified_at: string; agency_arrived_at: string }) {
       try {
         const { $api } = useNuxtApp()
         const payload = {
-          agency_notified_at: times.agencyNotifiedAt || null,
-          agency_arrived_at: times.agencyArrivedAt || null
+          agency_notified_at: times.agency_notified_at || null,
+          agency_arrived_at: times.agency_arrived_at || null
         }
         
         const response = await $api.alertsResponseTime(alertId, payload)

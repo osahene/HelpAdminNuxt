@@ -147,7 +147,8 @@
               <th scope="col" class="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Type</th>
               <th scope="col" class="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Location</th>
               <th scope="col" class="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Time</th>
-              <th scope="col" class="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+              <th scope="col" class="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Alert Status</th>
+              <th scope="col" class="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Agency Response Status</th>
               <th scope="col" class="relative px-5 py-3"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -184,6 +185,20 @@
                 {{ formatDistanceToNow(new Date(alert.created_at)) }} ago
               </td>
 
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <span
+                  class="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full"
+                  :class="alert.status === 'resolved'
+                    ? 'text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10'
+                    : 'text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10'"
+                >
+                  <span
+                    class="h-1.5 w-1.5 rounded-full"
+                    :class="alert.status === 'resolved' ? 'bg-emerald-500' : 'bg-amber-500'"
+                  ></span>
+                  {{ alert.status }}
+                </span>
+              </td>
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <span
                   class="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full"
@@ -301,10 +316,6 @@ const refreshMap = () => analyticsStore.fetchActiveAlerts()
 onMounted(async () => {
   try {
     await analyticsStore.fetchDashboardData()
-    console.log('Dashboard data successfully loaded:', {
-      stats: stats.value,
-      recentAlerts: recentAlerts.value
-    })
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error)
   }

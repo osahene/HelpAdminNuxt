@@ -2,7 +2,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig, type AxiosInstance } from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import dayjs from 'dayjs';
-import { defineNuxtPlugin, useRuntimeConfig, useRouter } from '#app';
+import { defineNuxtPlugin, useRuntimeConfig, useRouter, useCookie } from '#app';
 
 // ----------------------------------------------------------------------
 // Types
@@ -18,57 +18,18 @@ interface DecodedToken {
 }
 
 // ----------------------------------------------------------------------
-// UI Helpers (replace with your actual UI logic)
+// UI Helpers
 // ----------------------------------------------------------------------
 const showLoading = () => {
-  // TODO: implement loading overlay
   console.log('[Loading] show');
 };
 
 const hideLoading = () => {
-  // TODO: hide loading overlay
   console.log('[Loading] hide');
 };
 
 const showErrorNotification = (message: string) => {
-  // TODO: show error toast/notification
   console.error('[Notification]', message);
-};
-
-// ----------------------------------------------------------------------
-// Refresh token logic
-// ----------------------------------------------------------------------
-const takeRefreshToken = async (axiosInstance: AxiosInstance, baseURL?: string) => {
-  const urlBase = baseURL ?? '';
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) return null;
-
-  try {
-    const response = await axiosInstance.post(
-      `${urlBase}account/token/refresh/`,
-      { refresh: refreshToken }
-    );
-
-    const { access, refresh } = response.data;
-    if (access) {
-      axiosInstance.defaults.headers.common.Authorization = `Bearer ${access}`;
-      localStorage.setItem('accessToken', access);
-      if (refresh) {
-        localStorage.setItem('refreshToken', refresh);
-      }
-      return { accessToken: access, refreshToken: refresh || refreshToken };
-    }
-    return null;
-  } catch (error) {
-    let errorMessage = 'Error refreshing token';
-    if (axios.isAxiosError(error) && error.response?.data?.detail) {
-      errorMessage = error.response.data.detail;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    showErrorNotification(errorMessage);
-    return null;
-  }
 };
 
 // ----------------------------------------------------------------------
@@ -77,8 +38,13 @@ const takeRefreshToken = async (axiosInstance: AxiosInstance, baseURL?: string) 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig();
   const router = useRouter();
-  // set in nuxt.config.ts
   const baseURL = config.public.baseURL as string | undefined;
+
+  // 1. Initialize our cookies right at the top of the plugin
+  // These will work seamlessly on both Server (SSR) and Client (Browser)
+  const accessTokenCookie = useCookie<string | null>('accessToken', { default: () => null });
+  const refreshTokenCookie = useCookie<string | null>('refreshToken', { default: () => null });
+  const lastActiveCookie = useCookie<string | null>('lastActive', { default: () => null });
 
   // Create Axios instance
   const $axios = axios.create({
@@ -88,13 +54,52 @@ export default defineNuxtPlugin(() => {
   });
 
   // ----------------------------------------------------------------
-  // Activity tracking (client‑only)
+  // Refresh token logic (moved inside to access cookies easily)
+  // ----------------------------------------------------------------
+  const takeRefreshToken = async () => {
+    const refreshToken = refreshTokenCookie.value;
+    if (!refreshToken) return null;
+
+    try {
+      const response = await $axios.post(
+        `${baseURL ?? ''}account/token/refresh/`,
+        { refresh: refreshToken }
+      );
+
+      const { access, refresh } = response.data;
+      if (access) {
+        $axios.defaults.headers.common.Authorization = `Bearer ${access}`;
+        
+        // Save to cookies instead of localStorage
+        accessTokenCookie.value = access;
+        if (refresh) {
+          refreshTokenCookie.value = refresh;
+        }
+        return { accessToken: access, refreshToken: refresh || refreshToken };
+      }
+      return null;
+    } catch (error) {
+      let errorMessage = 'Error refreshing token';
+      if (axios.isAxiosError(error) && error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      showErrorNotification(errorMessage);
+      return null;
+    }
+  };
+
+  // ----------------------------------------------------------------
+  // Activity tracking (client-only)
   // ----------------------------------------------------------------
   let userIsActive = true;
 
   const setUserActive = () => {
     userIsActive = true;
-    localStorage.setItem('lastActive', new Date().toISOString());
+    if (process.client) {
+      lastActiveCookie.value = new Date().toISOString();
+    }
   };
 
   if (process.client) {
@@ -108,8 +113,8 @@ export default defineNuxtPlugin(() => {
   // ----------------------------------------------------------------
   const scheduleTokenRefresh = () => {
     setInterval(async () => {
-      const accessToken = localStorage.getItem('accessToken');
-      const refreshToken = localStorage.getItem('refreshToken');
+      const accessToken = accessTokenCookie.value;
+      const refreshToken = refreshTokenCookie.value;
 
       if (!accessToken || !refreshToken) return;
 
@@ -120,31 +125,29 @@ export default defineNuxtPlugin(() => {
         const accessExp = dayjs.unix(decodedAccess.exp);
         const refreshExp = dayjs.unix(decodedRefresh.exp);
 
-        // Refresh access token if expiring soon and user is active
-          if (accessExp.diff(now, 'minute') <= 1 && userIsActive) {
-            await takeRefreshToken($axios, baseURL ?? '');
+        if (accessExp.diff(now, 'minute') <= 1 && userIsActive) {
+          await takeRefreshToken();
         }
 
-        // Refresh refresh token if expiring soon and user is active
         if (refreshExp.diff(now, 'minute') <= 1 && userIsActive) {
-          await takeRefreshToken($axios, baseURL ?? '');
+          await takeRefreshToken();
         }
 
-        // Auto logout if refresh token expires while user inactive for 10+ minutes
-        const lastActive = dayjs(localStorage.getItem('lastActive'));
+        // Auto logout if refresh token expires while user inactive
+        const lastActiveDate = lastActiveCookie.value ? dayjs(lastActiveCookie.value) : dayjs();
         if (
-          now.diff(lastActive, 'minute') >= 10 &&
+          now.diff(lastActiveDate, 'minute') >= 10 &&
           refreshExp.diff(now, 'minute') <= 1
         ) {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+          accessTokenCookie.value = null;
+          refreshTokenCookie.value = null;
           userIsActive = false;
           router.push('/auth/login');
         }
       } catch (error) {
         console.error('Token refresh scheduler error:', error);
       }
-    }, 30000); // check every 30 seconds
+    }, 30000); 
   };
 
   if (process.client) {
@@ -157,7 +160,9 @@ export default defineNuxtPlugin(() => {
   $axios.interceptors.request.use(async (req: InternalAxiosRequestConfig) => {
     showLoading();
 
-    let accessToken = localStorage.getItem('accessToken');
+    // Safely read from the cookie instead of localStorage
+    let accessToken = accessTokenCookie.value;
+    
     if (accessToken) {
       const decoded = jwtDecode<DecodedToken>(accessToken);
       const isExpired = dayjs.unix(decoded.exp).diff(dayjs()) < 1;
@@ -165,12 +170,12 @@ export default defineNuxtPlugin(() => {
       if (!isExpired) {
         req.headers.Authorization = `Bearer ${accessToken}`;
       } else {
-        const tokens = await takeRefreshToken($axios, baseURL);
+        const tokens = await takeRefreshToken();
         if (tokens?.accessToken) {
           req.headers.Authorization = `Bearer ${tokens.accessToken}`;
         } else {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+          accessTokenCookie.value = null;
+          refreshTokenCookie.value = null;
           router.push('/auth/login');
         }
       }
@@ -188,12 +193,10 @@ export default defineNuxtPlugin(() => {
     },
     (error: AxiosError) => {
       hideLoading();
-      // Optional: handle global errors (e.g., 401, 403)
       return Promise.reject(error);
     }
   );
 
-  // Provide the axios instance to the app
   return {
     provide: {
       axios: $axios,

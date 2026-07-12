@@ -98,7 +98,7 @@
         </div>
         <div class="p-2">
           <ClientOnly>
-            <HeatmapView :points="heatmapData" />
+            <HeatmapView :points="heatmapData || []" />
           </ClientOnly>
         </div>
       </div>
@@ -204,13 +204,14 @@ const fetchAnalytics = async () => {
   if (dateRange.value.end) params.end = dateRange.value.end.toISOString()
 
   const { data } = await $api.analytics({ params })
-  if (data.value) {
-    kpis.value = data.value.kpis
-    alertsByTypeTime.value = data.value.alertsByTypeTime
-    responseTimeByAgency.value = data.value.responseTimeByAgency
-    userGrowthCoverage.value = data.value.userGrowthCoverage
-    heatmapData.value = data.value.heatmap
-    hotspots.value = data.value.hotspots
+  console.log('Fetched analytics data:', data) // Debugging line
+  if (data) {
+    kpis.value = data.kpis
+    alertsByTypeTime.value = data.alertsByTypeTime
+    responseTimeByAgency.value = data.responseTimeByAgency
+    userGrowthCoverage.value = data.userGrowthCoverage
+    heatmapData.value = data.heatmap
+    hotspots.value = data.hotspots
   }
   loadingHotspots.value = false
 }

@@ -118,10 +118,16 @@ const updateMarkers = () => {
   markerCluster = new MarkerClusterer({ map, markers })
 
   // 4. Auto-zoom map to fit all active missions/alerts
-  if (markers.length > 0) {
+ if (markers.length > 0) {
     map.fitBounds(bounds)
-    // Optional: Add a slight delay then zoom out a bit if it's too tight
-    // setTimeout(() => { if (map.getZoom() > 16) map.setZoom(16) }, 100)
+    
+    // Fix for single marker zooming in too far
+    const listener = google.maps.event.addListener(map, "idle", () => {
+      if (map!.getZoom()! > 15) {
+        map!.setZoom(15);
+      }
+      google.maps.event.removeListener(listener);
+    });
   }
 }
 

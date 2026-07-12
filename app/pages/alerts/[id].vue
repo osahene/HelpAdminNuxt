@@ -1,7 +1,5 @@
 <template>
   <div class="space-y-5">
-
-    <!-- Back + title + actions -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div class="flex items-center gap-3">
         <button
@@ -23,7 +21,7 @@
               {{ alert.type }}
             </span>
           </div>
-          <p class="text-xs text-slate-400 mt-0.5">Triggered {{ alert?.createdAt ? formatDistanceToNow(new Date(alert.createdAt)) + ' ago' : '' }}</p>
+          <p class="text-xs text-slate-400 mt-0.5">Triggered {{ alert?.created_at ? formatDistanceToNow(new Date(alert.created_at)) + ' ago' : '' }}</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -46,9 +44,7 @@
       </div>
     </div>
 
-    <!-- KPI cards -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <!-- Alert type -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-5">
         <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Alert Type</p>
         <div class="mt-3 flex items-center gap-3">
@@ -58,23 +54,19 @@
           <span class="text-lg font-bold text-slate-900 dark:text-white capitalize">{{ alert?.type || '—' }}</span>
         </div>
       </div>
-      <!-- Triggered at -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-5">
         <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Triggered At</p>
         <p class="mt-3 text-lg font-bold text-slate-900 dark:text-white">
-          {{ alert?.createdAt ? formatDateTime(alert.createdAt) : '—' }}
+          {{ alert?.created_at ? formatDateTime(alert.created_at) : '—' }}
         </p>
       </div>
-      <!-- Elapsed time -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-5">
         <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Elapsed Time</p>
         <p class="mt-3 text-lg font-bold text-slate-900 dark:text-white font-mono">{{ elapsedTime }}</p>
       </div>
     </div>
 
-    <!-- Map + User info -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <!-- Map -->
       <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
           <MapPinIcon class="h-4 w-4 text-sky-500" />
@@ -83,12 +75,11 @@
         </div>
         <div class="h-72 p-1">
           <ClientOnly>
-            <AlertDetailMap :location="alert?.location" />
+            <AlertDetailMap :alerts="alert ? [alert] : []" />
           </ClientOnly>
         </div>
       </div>
 
-      <!-- User info -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
           <UserCircleIcon class="h-4 w-4 text-sky-500" />
@@ -128,7 +119,6 @@
       </div>
     </div>
 
-    <!-- Timeline + Admin form -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
         <ClockIcon class="h-4 w-4 text-sky-500" />
@@ -137,7 +127,6 @@
       <div class="p-6">
         <ol class="relative border-l-2 border-slate-200 dark:border-slate-700 space-y-0">
           <li v-for="(event, i) in timelineEvents" :key="event.id" class="ml-6 pb-8 last:pb-0">
-            <!-- Connector dot -->
             <span :class="['absolute -left-2.5 flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-white dark:ring-slate-800', event.iconBg]">
               <component :is="event.icon" class="h-2.5 w-2.5 text-white" />
             </span>
@@ -153,14 +142,13 @@
           </li>
         </ol>
 
-        <!-- Admin response time update -->
         <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
           <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-4">Update Response Times</h4>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
             <div>
               <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Agency Notified At</label>
               <input
-                v-model="responseForm.agencyNotifiedAt"
+                v-model="responseForm.agency_notified_at"
                 type="datetime-local"
                 class="block w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
               />
@@ -168,7 +156,7 @@
             <div>
               <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Agency Arrived At</label>
               <input
-                v-model="responseForm.agencyArrivedAt"
+                v-model="responseForm.agency_arrived_at"
                 type="datetime-local"
                 class="block w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
               />
@@ -185,9 +173,7 @@
       </div>
     </div>
 
-    <!-- Contacts + Verification -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <!-- Contacts notified -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
           <UsersIcon class="h-4 w-4 text-sky-500" />
@@ -198,7 +184,7 @@
         </div>
         <ul class="divide-y divide-slate-100 dark:divide-slate-700/60">
           <li
-            v-for="contact in alert?.contactsNotifiedDetails"
+            v-for="contact in alert?.contacts_notified_details"
             :key="contact.id"
             class="px-5 py-3.5 flex items-center justify-between"
           >
@@ -212,19 +198,18 @@
               </div>
             </div>
             <div class="text-right">
-              <span :class="contactStatusClass(contact.notificationStatus)">{{ contact.notificationStatus }}</span>
-              <p v-if="contact.verifiedAt" class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
-                ✓ Verified {{ formatTime(contact.verifiedAt) }}
+              <span :class="contactStatusClass(contact.notification_status)">{{ contact.notification_status }}</span>
+              <p v-if="contact.verified_at" class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
+                ✓ Verified {{ formatTime(contact.verified_at) }}
               </p>
             </div>
           </li>
-          <li v-if="!alert?.contactsNotifiedDetails?.length" class="px-5 py-10 text-center text-sm text-slate-400">
+          <li v-if="!alert?.contacts_notified_details?.length" class="px-5 py-10 text-center text-sm text-slate-400">
             No contacts notified
           </li>
         </ul>
       </div>
 
-      <!-- Verification links -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
           <ShieldCheckIcon class="h-4 w-4 text-sky-500" />
@@ -255,7 +240,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -270,23 +254,42 @@ import {
 import AlertDetailMap from '~/components/admin/AlertMap.vue'
 import type { Alert } from '~/types'
 
-definePageMeta({ layout: 'admin' })
+import { storeToRefs } from 'pinia'
+import { useAlertsStore } from '~/stores/alerts'
 
-const { $api } = useNuxtApp()
+definePageMeta({ layout: 'admin' })
 
 const route = useRoute()
 const alertId = route.params.id as string
-const { data: alert, refresh } = await $api.alert({alertId})
+
+const alertsStore = useAlertsStore()
+// Alias selectedAlert to alert to keep template intact
+const { selectedAlert: alert, loading } = storeToRefs(alertsStore)
+
+// Fetch data properly avoiding hydration mismatches
+await useAsyncData(`alert-${alertId}`, () => alertsStore.fetchAlertById(alertId))
 
 const responseForm = reactive({
-  agencyNotifiedAt: alert.value?.agencyNotifiedAt?.slice(0, 16) || '',
-  agencyArrivedAt: alert.value?.agencyArrivedAt?.slice(0, 16) || ''
+  agencyNotifiedAt: '',
+  agencyArrivedAt: ''
 })
+
+// Ensures form stays synced if store updates after initialization
+watch(
+  alert,
+  (newAlert) => {
+    if (newAlert) {
+      responseForm.agencyNotifiedAt = newAlert.agencyNotifiedAt?.slice(0, 16) || ''
+      responseForm.agencyArrivedAt = newAlert.agencyArrivedAt?.slice(0, 16) || ''
+    }
+  },
+  { immediate: true }
+)
 
 // --- Computed ---
 const elapsedTime = computed(() => {
-  if (!alert.value?.createdAt) return 'N/A'
-  const s = differenceInSeconds(new Date(), new Date(alert.value.createdAt))
+  if (!alert.value?.created_at) return 'N/A'
+  const s = differenceInSeconds(new Date(), new Date(alert.value.created_at))
   return `${Math.floor(s / 60)}m ${s % 60}s`
 })
 
@@ -295,7 +298,7 @@ const timelineEvents = computed(() => {
   const events: any[] = [
     { id: 'created', icon: ExclamationTriangleIcon, iconBg: 'bg-red-500',
       content: 'Alert triggered by user', detail: alert.value.type,
-      time: format(new Date(alert.value.createdAt), 'HH:mm:ss') }
+      time: format(new Date(alert.value.created_at), 'HH:mm:ss') }
   ]
   if (alert.value.agencyNotifiedAt) events.push({
     id: 'notified', icon: PhoneIcon, iconBg: 'bg-sky-500',
@@ -330,12 +333,14 @@ const getInitials = (name?: string) => {
 }
 
 const typeConfig: Record<string, { pill: string; dot: string; bg: string; color: string }> = {
-  robbery:  { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500', bg: 'bg-red-100 dark:bg-red-500/15', color: 'text-red-600 dark:text-red-400' },
-  health:   { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/15', color: 'text-emerald-600 dark:text-emerald-400' },
-  fire:     { pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/15', color: 'text-orange-600 dark:text-orange-400' },
-  flood:    { pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/15', color: 'text-blue-600 dark:text-blue-400' },
-  violence: { pill: 'text-purple-700 bg-purple-50 dark:text-purple-300 dark:bg-purple-500/10', dot: 'bg-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/15', color: 'text-purple-600 dark:text-purple-400' },
+  'Robbery Attack': { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500' },
+  'Health Crisis': { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
+  'Fire Outbreak': { pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500' },
+  'Flood Alert': { pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500' },
+  'Violence Alert': { pill: 'text-purple-700 bg-purple-50 dark:text-purple-300 dark:bg-purple-500/10', dot: 'bg-purple-500' },
+  'Call Emergency': { pill: 'text-yellow-700 bg-yellow-50 dark:text-yellow-300 dark:bg-yellow-500/10', dot: 'bg-yellow-500' },
 }
+
 const typeBadgeClass = (t?: string) =>
   `inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${typeConfig[t || '']?.pill ?? 'text-slate-600 bg-slate-100'}`
 const typeIconBg = (t?: string) => typeConfig[t || '']?.bg ?? 'bg-slate-100 dark:bg-slate-700'
@@ -367,19 +372,19 @@ const formatTime = (d: string) => format(new Date(d), 'HH:mm')
 
 const copyLink = (text: string) => navigator.clipboard.writeText(text)
 
+// Actions now use Pinia
 const updateResponseTimes = async () => {
-  await $api.alertsResponseTime(alertId, {
+  await alertsStore.updateResponseTimes(alertId, {
     agencyNotifiedAt: responseForm.agencyNotifiedAt,
     agencyArrivedAt: responseForm.agencyArrivedAt
   })
-  refresh()
 }
+
 const markAsFalseAlarm = async () => {
-  await $api.alertsIdStatus(alertId, { status: 'false_alarm' })
-  refresh()
+  await alertsStore.updateAlertStatus(alertId, 'false_alarm')
 }
+
 const resolveAlert = async () => {
-  await $api.alertsIdStatus(alertId, { status: 'resolved' })
-  refresh()
+  await alertsStore.updateAlertStatus(alertId, 'resolved')
 }
 </script>
