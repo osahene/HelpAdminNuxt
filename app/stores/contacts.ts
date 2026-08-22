@@ -27,7 +27,7 @@ export const useContactsStore = defineStore('contacts', {
         }
 
         // Axios directly unwraps the network packet payload structure under response.data
-        const response = await $api.contacts(queryParams)
+        const response = await $api.contacts({ params: queryParams })
         const payload = response?.data || response
 
         if (payload && 'results' in payload) {
@@ -68,7 +68,7 @@ export const useContactsStore = defineStore('contacts', {
       }
     },
 
-    async inviteContact(id: string) {
+    async inviteContact( id: string) {
       try {
         const { $api } = useNuxtApp()
         const response = await $api.inviteContact(id)

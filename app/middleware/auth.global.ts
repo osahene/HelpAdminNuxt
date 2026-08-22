@@ -1,32 +1,21 @@
-/**
- * middleware/auth.ts
- *
- * Global route guard for the SafeLink admin portal.
- *
- * Rules:
- * 1. Public pages (login, register, verify-email, auth-pin) are always accessible
- *    when the user is NOT authenticated.
- * 2. If an authenticated user visits a public/auth page, redirect them to /dashboard.
- * 3. Every other route requires authentication — redirect unauthenticated users to /login
- *    and preserve the original destination in `?redirect=` for post-login bounce-back.
- * 4. Role-based access: certain routes are restricted to specific roles.
- *    Unauthorised users are redirected to /dashboard with a 403 toast.
- */
-
 import { useAuthStore } from '~/stores/auth'
 
 // Routes that do NOT require authentication
 const PUBLIC_ROUTES = [
   '/auth/login',
   '/auth/register',
-  '/auth/verify-email',
-  '/auth/auth-pin',
+  '/auth/verifyEmail',
+  '/auth/authPin',
   '/auth/forgot-password',
   '/auth/reset-password',
 ]
 
 // Role-based access map: route prefix → allowed roles
 const ROLE_RESTRICTIONS: Record<string, string[]> = {
+  '/dashboard':  ['super_admin', 'admin'],
+  '/users':  ['super_admin', 'admin'],
+  '/contacts':  ['super_admin', 'admin'],
+  '/alerts':  ['super_admin', 'admin'],
   '/settings':  ['super_admin', 'admin'],
   '/marketing': ['super_admin', 'admin'],
   '/reports':   ['super_admin', 'admin', 'analyst'],

@@ -91,9 +91,9 @@ defineEmits<{
   (e: 'row-click', row: any): void
 }>()
 
-// Detect if parent listens to row-click
+// Detect if parent listens to row-click (Vue normalizes @row-click -> onRowClick)
 const attrs = useAttrs()
-const onClick = computed(() => !!attrs['onRow-click'])
+const onClick = computed(() => !!attrs.onRowClick)
 
 const skeletonWidths = ['60%', '80%', '45%', '70%', '55%', '75%', '50%']
 

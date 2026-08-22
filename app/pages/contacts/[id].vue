@@ -25,16 +25,16 @@
         <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
           <div>
             <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Phone</dt>
-            <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ contact?.phone || '—' }}</dd>
+            <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ contact?.phone_number ? `${contact.country_code ?? ''}${contact.phone_number}` : '—' }}</dd>
           </div>
           <div>
             <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Email</dt>
-            <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ contact?.email || '—' }}</dd>
+            <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ contact?.email_address || '—' }}</dd>
           </div>
           <div>
             <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Registered User</dt>
             <dd class="mt-1">
-              <span v-if="contact?.isUser" class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
+              <span v-if="contact?.is_user" class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
                 <CheckCircleIcon class="h-3.5 w-3.5" /> Yes
               </span>
               <span v-else class="text-sm text-slate-400">No</span>
@@ -43,21 +43,21 @@
           <div>
             <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Added By</dt>
             <dd class="mt-1">
-              <NuxtLink :to="`/users/${contact?.userId}`" class="text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400">
-                {{ contact?.user?.name || '—' }}
+              <NuxtLink :to="`/users/${contact?.added_by?.id}`" class="text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400">
+                {{ contact?.added_by?.name || '—' }}
               </NuxtLink>
             </dd>
           </div>
           <div>
             <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Added On</dt>
-            <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ contact?.createdAt ? formatDate(contact.createdAt) : '—' }}</dd>
+            <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ contact?.created_at ? formatDate(contact.created_at) : '—' }}</dd>
           </div>
         </div>
       </div>
 
       <div class="mt-6 flex flex-wrap gap-2 pt-5 border-t border-slate-100 dark:border-slate-700">
         <button
-          v-if="!contact?.isUser"
+          v-if="!contact?.is_user"
           @click="inviteContact"
           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white shadow-sm shadow-sky-500/20 transition-all"
         >
@@ -82,11 +82,11 @@
         <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Notification History</h3>
       </div>
       <DataTable :columns="notificationColumns" :data="notifications || []" :loading="!!loadingNotifications">
-        <template #cell-alertType="{ row }">
-          <span :class="alertTypeBadge(row.alertType)">{{ row.alertType }}</span>
+        <template #cell-alert_type="{ row }">
+          <span :class="alertTypeBadge(row.alert_type)">{{ row.alert_type }}</span>
         </template>
-        <template #cell-deliveryStatus="{ row }">
-          <span :class="deliveryStatusBadge(row.deliveryStatus)">{{ row.deliveryStatus }}</span>
+        <template #cell-delivery_status="{ row }">
+          <span :class="deliveryStatusBadge(row.delivery_status)">{{ row.delivery_status }}</span>
         </template>
       </DataTable>
     </div>
@@ -104,14 +104,32 @@ const { $api } = useNuxtApp()
 
 const route = useRoute()
 const contactId = route.params.id as string
-const { data: contact } = await $api.contact({ contactId })
-const { data: notifications, pending: loadingNotifications } = await $api.contactNotifications({ contactId })
+
+const contact = ref<any>(null)
+const notifications = ref<any[]>([])
+const loadingNotifications = ref(false)
+
+const loadContactDetail = async () => {
+  loadingNotifications.value = true
+  try {
+    const [contactRes, notificationsRes] = await Promise.all([
+      $api.contactsId(contactId),
+      $api.contactNotifications(contactId)
+    ])
+    contact.value = contactRes.data
+    notifications.value = notificationsRes.data || []
+  } finally {
+    loadingNotifications.value = false
+  }
+}
+
+await loadContactDetail()
 
 const notificationColumns = [
-  { key: 'alertType', label: 'Alert Type' },
-  { key: 'sentAt', label: 'Sent At', format: (v: string) => v ? new Date(v).toLocaleString() : '—' },
-  { key: 'deliveryStatus', label: 'Status' },
-  { key: 'verifiedAt', label: 'Verified At', format: (v: string) => v ? new Date(v).toLocaleString() : '—' },
+  { key: 'alert_type', label: 'Alert Type' },
+  { key: 'sent_at', label: 'Sent At', format: (v: string) => v ? new Date(v).toLocaleString() : '—' },
+  { key: 'delivery_status', label: 'Status' },
+  { key: 'verified_at', label: 'Verified At', format: (v: string) => v ? new Date(v).toLocaleString() : '—' },
 ]
 
 const getInitials = (name?: string) => {
@@ -148,6 +166,6 @@ const deliveryStatusBadge = (s: string) => {
 }
 
 const formatDate = (d: string) => new Date(d).toLocaleDateString()
-const inviteContact = async () => { await $api.inviteContact({ contactId }) }
-const resendInvite = async () => { await $api.resendInvite({ contactId }) }
+const inviteContact = async () => { await $api.inviteContact(contactId) }
+const resendInvite = async () => { await $api.resendInvite(contactId) }
 </script>

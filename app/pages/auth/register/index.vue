@@ -70,7 +70,7 @@
             type="email"
             required
             autocomplete="email"
-            placeholder="admin@teenbytetechlab.com"
+            placeholder="kofi@safelink.gh"
             class="auth-input has-icon"
           />
         </div>
@@ -199,17 +199,22 @@ const handleRegister = async () => {
   error.value = ''
   try {
     await authStore.register({
-      firstName: form.firstName,
-      lastName: form.lastName,
+      first_name: form.firstName,
+      last_name: form.lastName,
       name: `${form.firstName} ${form.lastName}`,
       role: form.role,
       email: form.email,
       password: form.password,
+      confirm_password: form.confirmPassword,
     })
     // Registration sends a verification email — redirect to confirm page
-    navigateTo(`/verify-email?email=${encodeURIComponent(form.email)}`)
+    navigateTo(`/auth/verifyEmail?email=${encodeURIComponent(form.email)}`)
   } catch (err: any) {
-    error.value = err?.data?.message || 'Registration failed. Please try again.'
+    const data = err?.response?.data
+    error.value =
+      data?.error || data?.detail || data?.non_field_errors?.[0] ||
+      data?.email?.[0] || data?.confirm_password?.[0] ||
+      'Registration failed. Please try again.'
   } finally {
     loading.value = false
   }

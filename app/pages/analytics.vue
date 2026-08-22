@@ -118,17 +118,40 @@
 
     <!-- Hotspots table -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
-        <FireIcon class="h-4 w-4 text-orange-500" />
-        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Alert Hotspots</h3>
-        <span class="text-xs text-slate-400 ml-1">by area — click to zoom on map</span>
+      <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+        <div class="flex items-center gap-2 flex-wrap">
+          <FireIcon class="h-4 w-4 text-orange-500" />
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Alert Hotspots</h3>
+          <span class="text-xs text-slate-400 ml-1">
+            {{ currentHotspotLevel < hotspotLevels.length - 1 ? 'click a row to drill down' : 'finest level reached' }}
+          </span>
+        </div>
+        <!-- Breadcrumb trail -->
+        <div class="flex items-center gap-1 flex-wrap mt-2 text-xs">
+          <template v-for="(crumb, i) in breadcrumbs" :key="i">
+            <ChevronRightIcon v-if="i > 0" class="h-3 w-3 text-slate-300 dark:text-slate-600" />
+            <button
+              @click="drillTo(i - 1)"
+              :disabled="i === breadcrumbs.length - 1"
+              :class="i === breadcrumbs.length - 1
+                ? 'font-semibold text-slate-700 dark:text-slate-200 cursor-default'
+                : 'text-sky-600 hover:text-sky-700 dark:text-sky-400 hover:underline'"
+            >
+              {{ crumb }}
+            </button>
+          </template>
+        </div>
       </div>
       <DataTable
         :columns="hotspotColumns"
         :data="hotspots"
         :loading="loadingHotspots"
-        @row-click="zoomToArea"
+        @row-click="drillInto"
       >
+        <template #cell-area="{ row }">
+          <span class="font-medium">{{ row.area }}</span>
+          <ChevronRightIcon v-if="row.hasChildren" class="inline h-3 w-3 text-slate-400 ml-1" />
+        </template>
         <template #cell-alertCount="{ row }">
           <div class="flex items-center gap-2">
             <div class="h-1.5 rounded-full bg-red-400" :style="{ width: `${Math.min((row.alertCount / maxAlertCount) * 80, 80)}px` }"></div>
@@ -147,7 +170,8 @@
 <script setup lang="ts">
 import {
   CalendarIcon, ArrowPathIcon, BellAlertIcon, ClockIcon,
-  ExclamationTriangleIcon, UsersIcon, ChartBarIcon, MapPinIcon, FireIcon
+  ExclamationTriangleIcon, UsersIcon, ChartBarIcon, MapPinIcon, FireIcon,
+  ChevronRightIcon
 } from '@heroicons/vue/24/outline'
 import { UserPlusIcon } from '@heroicons/vue/24/solid'
 import DatePicker from '~/components/ui/DatePicker.vue'
@@ -172,14 +196,41 @@ const heatmapData = ref([])
 const hotspots = ref<any[]>([])
 const loadingHotspots = ref(false)
 
+// Alert Hotspots drill-down: country -> region -> city -> town -> locality,
+// matching the geo fields on the Emergency model.
+const hotspotLevels = ['country', 'region', 'city', 'town', 'locality']
+const hotspotLevelLabels: Record<string, string> = {
+  country: 'Country', region: 'Region', city: 'City', town: 'Town', locality: 'Locality',
+}
+const drillPath = ref<{ level: string; value: string }[]>([])
+
+const currentHotspotLevel = computed(() => Math.min(drillPath.value.length, hotspotLevels.length - 1))
+
+const breadcrumbs = computed(() => [
+  `All ${hotspotLevelLabels[hotspotLevels[0]]}s`,
+  ...drillPath.value.map(step => step.value)
+])
+
+const drillInto = (row: any) => {
+  if (!row.hasChildren) return
+  drillPath.value.push({ level: row.level, value: row.area })
+  fetchAnalytics()
+}
+
+// index -1 resets to the root level; otherwise keep drillPath[0..index]
+const drillTo = (index: number) => {
+  drillPath.value = drillPath.value.slice(0, index + 1)
+  fetchAnalytics()
+}
+
 const maxAlertCount = computed(() => Math.max(...hotspots.value.map(h => h.alertCount || 0), 1))
 
-const hotspotColumns = [
-  { key: 'area', label: 'Area' },
+const hotspotColumns = computed(() => [
+  { key: 'area', label: hotspotLevelLabels[hotspotLevels[currentHotspotLevel.value]] ?? 'Area' },
   { key: 'alertCount', label: 'Alerts' },
   { key: 'avgResponseTime', label: 'Avg Response', format: (v: number) => formatTime(v) },
   { key: 'dominantType', label: 'Main Type' },
-]
+])
 
 const formatTime = (s: number) => {
   if (!s) return 'N/A'
@@ -199,27 +250,31 @@ const alertTypeBadge = (t: string) => {
 
 const fetchAnalytics = async () => {
   loadingHotspots.value = true
-  const params: Record<string, string> = {}
+  const params: Record<string, string> = {
+    hotspot_level: hotspotLevels[currentHotspotLevel.value],
+  }
   if (dateRange.value.start) params.start = dateRange.value.start.toISOString()
   if (dateRange.value.end) params.end = dateRange.value.end.toISOString()
+  drillPath.value.forEach(step => { params[`hotspot_${step.level}`] = step.value })
 
-  const { data } = await $api.analytics({ params })
-  console.log('Fetched analytics data:', data) // Debugging line
-  if (data) {
-    kpis.value = data.kpis
-    alertsByTypeTime.value = data.alertsByTypeTime
-    responseTimeByAgency.value = data.responseTimeByAgency
-    userGrowthCoverage.value = data.userGrowthCoverage
-    heatmapData.value = data.heatmap
-    hotspots.value = data.hotspots
+  try {
+    const { data } = await $api.analytics({ params })
+    if (data) {
+      kpis.value = data.kpis
+      alertsByTypeTime.value = data.alertsByTypeTime
+      responseTimeByAgency.value = data.responseTimeByAgency
+      userGrowthCoverage.value = data.userGrowthCoverage
+      heatmapData.value = data.heatmap
+      hotspots.value = data.hotspots
+    }
+  } finally {
+    loadingHotspots.value = false
   }
-  loadingHotspots.value = false
 }
 
-const refreshAnalytics = () => fetchAnalytics()
-
-const zoomToArea = (row: any) => {
-  console.log('Zooming to area:', row.area)
+const refreshAnalytics = () => {
+  drillPath.value = []
+  fetchAnalytics()
 }
 
 onMounted(fetchAnalytics)

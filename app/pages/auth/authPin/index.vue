@@ -179,7 +179,7 @@ const verifyPin = async () => {
     setTimeout(() => navigateTo('/auth/login'), 1200)
   } catch (err: any) {
     attemptsLeft.value = Math.max(0, attemptsLeft.value - 1)
-    error.value = err?.data?.message || 'Invalid PIN. Please try again.'
+    error.value = err?.response?.data?.error || 'Invalid PIN. Please try again.'
     digits.value = ['', '', '', '', '', '']
     nextTick(() => inputRefs.value[0]?.focus())
   } finally {

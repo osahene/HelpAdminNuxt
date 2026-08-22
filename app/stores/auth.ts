@@ -100,9 +100,16 @@ export const useAuthStore = defineStore('auth', {
             localStorage.setItem('auth_user', JSON.stringify(this.user))
           }
 
-          // Maintain cross-tab or service-side cookie persistence state rules
-          const tokenCookie = useCookie('helpoohelp_token', { maxAge: credentials.remember ? 60 * 60 * 24 * 7 : undefined })
-          tokenCookie.value = this.token
+          // Store under the same cookie names the axios plugin reads to build
+          // the Authorization header (see plugins/axiosInstance.ts) — writing
+          // to a different cookie here left every request unauthenticated.
+          const maxAge = credentials.remember ? 60 * 60 * 24 * 7 : undefined
+          const accessTokenCookie = useCookie<string | null>('accessToken', { maxAge })
+          accessTokenCookie.value = this.token
+          if (this.refresh) {
+            const refreshTokenCookie = useCookie<string | null>('refreshToken', { maxAge })
+            refreshTokenCookie.value = this.refresh
+          }
         }
         return payload
       } catch (error) {
@@ -118,8 +125,8 @@ export const useAuthStore = defineStore('auth', {
     async fetchUser() {
       // Pull access tokens out of cookie states if state context re-initializes
       if (!this.token) {
-        const tokenCookie = useCookie<string | null>('helpoohelp_token')
-        this.token = tokenCookie.value ?? null
+        const accessTokenCookie = useCookie<string | null>('accessToken')
+        this.token = accessTokenCookie.value ?? null
       }
 
       if (!this.token) {
@@ -188,8 +195,10 @@ export const useAuthStore = defineStore('auth', {
         localStorage.removeItem('auth_user')
       }
 
-      const tokenCookie = useCookie('helpoohelp_token')
-      tokenCookie.value = null
+      const accessTokenCookie = useCookie('accessToken')
+      accessTokenCookie.value = null
+      const refreshTokenCookie = useCookie('refreshToken')
+      refreshTokenCookie.value = null
     }
   }
 })

@@ -131,15 +131,15 @@ const handleLogin = async () => {
     const redirect = useRoute().query.redirect as string
     navigateTo(redirect || '/dashboard')
   } catch (err: any) {
-    const status = err?.status || err?.statusCode
-    if (status === 401) {
-      error.value = 'Incorrect email or password.'
-    } else if (status === 403) {
-      error.value = 'Your account has not been authorized yet. Please complete the verification steps.'
-    } else if (status === 429) {
+    // AdminLoginSerializer raises all validation failures (bad credentials,
+    // unverified email, not-yet-authorised) as HTTP 400 with the reason in
+    // non_field_errors — it doesn't vary the status code per case.
+    const data = err?.response?.data
+    const message = data?.non_field_errors?.[0] || data?.detail || data?.message
+    if (err?.response?.status === 429) {
       error.value = 'Too many attempts. Please wait a few minutes before trying again.'
     } else {
-      error.value = err?.data?.message || 'Sign in failed. Please try again.'
+      error.value = message || 'Sign in failed. Please try again.'
     }
   } finally {
     loading.value = false

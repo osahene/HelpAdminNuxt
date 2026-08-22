@@ -151,9 +151,9 @@ const verifyCode = async () => {
   try {
     await authStore.verifyEmail({ email: email.value, code: code.value })
     success.value = true
-    setTimeout(() => navigateTo(`/auth-pin?email=${encodeURIComponent(email.value)}`), 1200)
+    setTimeout(() => navigateTo(`/auth/authPin?email=${encodeURIComponent(email.value)}`), 1200)
   } catch (err: any) {
-    error.value = err?.data?.message || 'Invalid code. Please check and try again.'
+    error.value = err?.response?.data?.error || 'Invalid code. Please check and try again.'
     // Shake and clear on wrong code
     digits.value = ['', '', '', '', '', '']
     nextTick(() => inputRefs.value[0]?.focus())

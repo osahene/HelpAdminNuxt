@@ -99,7 +99,7 @@
             <dl class="space-y-3">
               <div class="flex items-center gap-2">
                 <PhoneIcon class="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <span class="text-sm text-slate-700 dark:text-slate-300">{{ alert.user.phone }}</span>
+                <span class="text-sm text-slate-700 dark:text-slate-300">{{ alert.user.country_code }}{{ alert.user.phone_number }}</span>
               </div>
               <div class="flex items-center gap-2">
                 <EnvelopeIcon class="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -179,7 +179,7 @@
           <UsersIcon class="h-4 w-4 text-sky-500" />
           <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Contacts Notified</h3>
           <span class="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full font-medium ml-auto">
-            {{ alert?.contactsNotifiedDetails?.length ?? 0 }}
+            {{ alert?.contacts_notified_details?.length ?? 0 }}
           </span>
         </div>
         <ul class="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -270,8 +270,8 @@ const { selectedAlert: alert, loading } = storeToRefs(alertsStore)
 await useAsyncData(`alert-${alertId}`, () => alertsStore.fetchAlertById(alertId))
 
 const responseForm = reactive({
-  agencyNotifiedAt: '',
-  agencyArrivedAt: ''
+  agency_notified_at: '',
+  agency_arrived_at: ''
 })
 
 // Ensures form stays synced if store updates after initialization
@@ -279,8 +279,8 @@ watch(
   alert,
   (newAlert) => {
     if (newAlert) {
-      responseForm.agencyNotifiedAt = newAlert.agencyNotifiedAt?.slice(0, 16) || ''
-      responseForm.agencyArrivedAt = newAlert.agencyArrivedAt?.slice(0, 16) || ''
+      responseForm.agency_notified_at = newAlert.agency_notified_at?.slice(0, 16) || ''
+      responseForm.agency_arrived_at = newAlert.agency_arrived_at?.slice(0, 16) || ''
     }
   },
   { immediate: true }
@@ -300,26 +300,26 @@ const timelineEvents = computed(() => {
       content: 'Alert triggered by user', detail: alert.value.type,
       time: format(new Date(alert.value.created_at), 'HH:mm:ss') }
   ]
-  if (alert.value.agencyNotifiedAt) events.push({
+  if (alert.value.agency_notified_at) events.push({
     id: 'notified', icon: PhoneIcon, iconBg: 'bg-sky-500',
     content: 'Emergency contacts notified via call, SMS & email',
-    time: format(new Date(alert.value.agencyNotifiedAt), 'HH:mm:ss')
+    time: format(new Date(alert.value.agency_notified_at), 'HH:mm:ss')
   })
-  if (alert.value.agencyArrivedAt) events.push({
+  if (alert.value.agency_arrived_at) events.push({
     id: 'arrived', icon: MapPinIcon, iconBg: 'bg-emerald-500',
     content: 'Agency arrived at incident location',
-    time: format(new Date(alert.value.agencyArrivedAt), 'HH:mm:ss')
+    time: format(new Date(alert.value.agency_arrived_at), 'HH:mm:ss')
   })
   if (alert.value.status === 'resolved') events.push({
     id: 'resolved', icon: CheckCircleIcon, iconBg: 'bg-emerald-600',
     content: 'Alert marked as resolved',
-    time: alert.value.resolvedAt ? format(new Date(alert.value.resolvedAt), 'HH:mm:ss') : 'N/A'
+    time: alert.value.resolved_at ? format(new Date(alert.value.resolved_at), 'HH:mm:ss') : 'N/A'
   })
   return events
 })
 
 const verificationLinks = computed(() =>
-  alert.value?.contactsNotifiedDetails?.map((c: any) => ({
+  alert.value?.contacts_notified_details?.map((c: any) => ({
     contactId: c.id,
     url: `${typeof window !== 'undefined' ? window.location.origin : ''}/verify/${alertId}/${c.token}`
   })) || []
@@ -375,8 +375,8 @@ const copyLink = (text: string) => navigator.clipboard.writeText(text)
 // Actions now use Pinia
 const updateResponseTimes = async () => {
   await alertsStore.updateResponseTimes(alertId, {
-    agencyNotifiedAt: responseForm.agencyNotifiedAt,
-    agencyArrivedAt: responseForm.agencyArrivedAt
+    agency_notified_at: responseForm.agency_notified_at,
+    agency_arrived_at: responseForm.agency_arrived_at
   })
 }
 
