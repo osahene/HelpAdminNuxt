@@ -101,7 +101,7 @@ export const useAuthStore = defineStore('auth', {
           }
 
           // Maintain cross-tab or service-side cookie persistence state rules
-          const tokenCookie = useCookie('safelink_token', { maxAge: credentials.remember ? 60 * 60 * 24 * 7 : undefined })
+          const tokenCookie = useCookie('helpoohelp_token', { maxAge: credentials.remember ? 60 * 60 * 24 * 7 : undefined })
           tokenCookie.value = this.token
         }
         return payload
@@ -118,7 +118,7 @@ export const useAuthStore = defineStore('auth', {
     async fetchUser() {
       // Pull access tokens out of cookie states if state context re-initializes
       if (!this.token) {
-        const tokenCookie = useCookie<string | null>('safelink_token')
+        const tokenCookie = useCookie<string | null>('helpoohelp_token')
         this.token = tokenCookie.value ?? null
       }
 
@@ -188,7 +188,7 @@ export const useAuthStore = defineStore('auth', {
         localStorage.removeItem('auth_user')
       }
 
-      const tokenCookie = useCookie('safelink_token')
+      const tokenCookie = useCookie('helpoohelp_token')
       tokenCookie.value = null
     }
   }

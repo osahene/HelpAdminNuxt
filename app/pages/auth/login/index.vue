@@ -22,7 +22,7 @@
             type="email"
             required
             autocomplete="email"
-            placeholder="admin@safelink.gh"
+            placeholder="admin@teenbytetechlab.com"
             class="auth-input has-icon"
           />
         </div>
@@ -82,7 +82,7 @@
         <div class="w-full border-t border-white/6"></div>
       </div>
       <div class="relative flex justify-center">
-        <span class="px-3 text-xs text-slate-600" style="background: rgba(15, 23, 42, 0.85);">New to SafeLink Admin?</span>
+        <span class="px-3 text-xs text-slate-600" style="background: rgba(15, 23, 42, 0.85);">New to Help OO Help Admin?</span>
       </div>
     </div>
 

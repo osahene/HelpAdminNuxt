@@ -2,7 +2,7 @@
   <div>
     <div class="mb-6">
       <h1 class="text-xl font-bold text-white">Create an account</h1>
-      <p class="text-sm text-slate-400 mt-1">Register to access the SafeLink admin portal</p>
+      <p class="text-sm text-slate-400 mt-1">Register to access the admin portal</p>
     </div>
 
     <!-- Error -->
@@ -70,7 +70,7 @@
             type="email"
             required
             autocomplete="email"
-            placeholder="kofi@safelink.gh"
+            placeholder="admin@teenbytetechlab.com"
             class="auth-input has-icon"
           />
         </div>

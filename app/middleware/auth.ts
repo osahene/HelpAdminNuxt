@@ -13,7 +13,7 @@
  *    Unauthorised users are redirected to /dashboard with a 403 toast.
  */
 
-import { useAuthStore } from '~/stores/authLog'
+import { useAuthStore } from '~/stores/auth'
 
 // Routes that do NOT require authentication
 const PUBLIC_ROUTES = [

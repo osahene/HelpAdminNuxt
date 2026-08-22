@@ -85,7 +85,7 @@
             <MenuItems class="absolute right-0 mt-2 w-52 origin-top-right rounded-xl bg-white dark:bg-slate-800 shadow-lg ring-1 ring-slate-200/80 dark:ring-slate-700 py-1 focus:outline-none z-50">
               <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
                 <p class="text-xs text-slate-500 dark:text-slate-400">Signed in as</p>
-                <p class="text-sm font-semibold text-slate-800 dark:text-white truncate mt-0.5">{{ user?.email || 'admin@safelink.com' }}</p>
+                <p class="text-sm font-semibold text-slate-800 dark:text-white truncate mt-0.5">{{ user?.email || 'admin@teenbytetechlab.com' }}</p>
               </div>
 
               <MenuItem v-slot="{ active }">
