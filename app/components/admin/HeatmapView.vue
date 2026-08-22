@@ -1,7 +1,7 @@
 <template>
   <div class="relative h-72 w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900">
-
-    <div ref="mapContainer" class="h-full w-full" />
+    <!-- MapLibre and Deck.gl share this container -->
+    <div ref="mapContainer" class="h-full w-full absolute inset-0 z-0" />
 
     <Transition name="fade">
       <div v-if="!mapReady"
@@ -24,121 +24,122 @@
       <span class="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
       <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ points.length }} hotspots</span>
     </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, shallowRef } from 'vue'
 import { MapIcon } from '@heroicons/vue/24/outline'
-import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
+import { Deck } from '@deck.gl/core'
+import { HeatmapLayer } from '@deck.gl/aggregation-layers'
+import maplibregl from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css' // Crucial for map tiles formatting
 
-const config = useRuntimeConfig()
-const MAPAPIKEY = config.public.mapAPI as string || ''
+type PointData = { lat: number; lng: number; intensity?: number }
 
 const props = defineProps<{
-  points: Array<{ lat: number; lng: number; intensity?: number }>
+  points: Array<PointData>
 }>()
 
 const mapContainer = ref<HTMLElement | null>(null)
 const mapReady = ref(false)
 
-// shallowRef prevents Vue from proxying the Google Maps instances
-const mapInstance = shallowRef<google.maps.Map | null>(null)
-const heatmapLayer = shallowRef<google.maps.visualization.HeatmapLayer | null>(null)
-console.log('HeatmapView initialized with points:', props.points) // Debugging line
+const deckInstance = shallowRef<Deck | null>(null)
+const mapInstance = shallowRef<any | null>(null)
 
-const drawPoints = async () => {
-  if (!mapInstance.value || !props.points?.length) return
-
-  // 1. Explicitly await the necessary libraries to prevent race conditions
-  const { HeatmapLayer } = await importLibrary('visualization') as google.maps.VisualizationLibrary
-  const { LatLng, LatLngBounds, MVCArray } = await importLibrary('core') as google.maps.CoreLibrary
-
-  console.log('Drawing heatmap with :', HeatmapLayer) // Debugging line
-  console.log('Drawing latlng with :', LatLng) // Debugging line
-
-
-  // Clear existing layer if data changes
-  if (heatmapLayer.value) {
-    heatmapLayer.value.setMap(null)
+const getInitialViewState = () => {
+  if (!props.points || props.points.length === 0) {
+    return { longitude: -0.187, latitude: 5.6037, zoom: 2 }
   }
-
-  // Format data for Google Maps Heatmap
-  const heatmapData = props.points.map(p => ({
-    location: new LatLng(p.lat, p.lng),
-    weight: p.intensity ?? 0.5
-  }))
-
-  console.log(heatmapData[0].location.lat());
-
-  // 2. Wrap data in MVCArray to completely detach it from Vue's reactivity proxy
-  heatmapLayer.value = new HeatmapLayer({
-    data: new MVCArray(heatmapData),
-    map: mapInstance.value,
-    radius: 25,
-    opacity: 0.8,
-  })
-
-  // Auto-center map to fit all data points
-  const bounds = new LatLngBounds()
-  props.points.forEach(p => {
-    bounds.extend(new LatLng(p.lat, p.lng))
-  })
-
-  if (!bounds.isEmpty()) {
-    mapInstance.value.fitBounds(bounds)
+  const lats = props.points.map(p => p.lat)
+  const lngs = props.points.map(p => p.lng)
+  return {
+    longitude: (Math.min(...lngs) + Math.max(...lngs)) / 2,
+    latitude: (Math.min(...lats) + Math.max(...lats)) / 2,
+    zoom: 11
   }
 }
 
-onMounted(async () => {
+const createHeatmapLayer = () => {
+  return new HeatmapLayer<PointData>({
+    id: 'HeatmapLayer',
+    data: props.points,
+    aggregation: 'SUM',
+    getPosition: (d: PointData) => [d.lng, d.lat],
+    getWeight: (d: PointData) => d.intensity ?? 0.5,
+    radiusPixels: 25,
+    opacity: 0.8
+  })
+}
+
+const drawPoints = () => {
+  if (!deckInstance.value) return
+  deckInstance.value.setProps({
+    layers: [createHeatmapLayer()]
+  })
+}
+
+onMounted(() => {
   if (!mapContainer.value) return
 
   try {
-    setOptions({
-      key: MAPAPIKEY,
-      v: '3.64'
-      // We don't need 'libraries: ["visualization"]' here anymore 
-      // because we explicitly import it in drawPoints()
+    const viewState = getInitialViewState()
+
+    // 1. Initialize MapLibre GL Basemap
+    mapInstance.value = new maplibregl.Map({
+      container: mapContainer.value,
+      style: 'https://stadiamaps.com/styles/alidade_smooth.json', // Basemap style
+      center: [viewState.longitude, viewState.latitude],
+      zoom: viewState.zoom,
+      interactive: false // Let deck.gl handle zoom/pan interactions
     })
 
-    const { Map } = await importLibrary('maps')
-
-    mapInstance.value = new Map(mapContainer.value, {
-      center: { lat: 5.6037, lng: -0.187 }, 
-      zoom: 2,
-      streetViewControl: false,
-      mapTypeControl: false,
+    // 2. Initialize Deck.gl and sync it with MapLibre's view state
+    deckInstance.value = new Deck({
+      parent: mapContainer.value,
+      initialViewState: viewState,
+      controller: true,
+      layers: [createHeatmapLayer()],
+      // Synchronize changes made by user mouse scrolling / panning
+      onViewStateChange: ({ viewState }) => {
+        mapInstance.value.jumpTo({
+          center: [viewState.longitude, viewState.latitude],
+          zoom: viewState.zoom,
+          bearing: viewState.bearing,
+          pitch: viewState.pitch
+        })
+      },
+      onLoad: () => {
+        mapReady.value = true
+      }
     })
-
-    mapReady.value = true
-    await drawPoints()
-
   } catch (err) {
-    console.warn('HeatmapView: Google Maps could not be loaded.', err)
+    console.warn('HeatmapView: map setup failed.', err)
     mapReady.value = true
   }
 })
 
-// Reactively update map when points prop changes
-watch(() => props.points, async () => {
-  await drawPoints()
+watch(() => props.points, () => {
+  drawPoints()
 }, { deep: true })
 
 onUnmounted(() => {
-  if (heatmapLayer.value) {
-    heatmapLayer.value.setMap(null)
+  if (deckInstance.value) {
+    deckInstance.value.finalize()
+    deckInstance.value = null
   }
-  mapInstance.value = null
-  heatmapLayer.value = null
+  if (mapInstance.value) {
+    mapInstance.value.remove()
+    mapInstance.value = null
+  }
 })
 </script>
+
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;

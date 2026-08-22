@@ -235,9 +235,7 @@ const preparePayload = (statusValue: 'draft' | 'sending') => {
 const previewRecipients = async () => {
   previewLoading.value = true
   try {
-    // Note: Django preview uses campaign ID normally, but if this is an estimation 
-    // before creation, make sure your backend supports parsing query params on this route.
-    const res = await $api.campaignsIdPreview('estimate') 
+    const res = await $api.campaignsPreview(form.recipientType) 
     estimatedCount.value = res.data?.count ?? 0
   } catch (error) {
     console.error("Failed to fetch recipient preview:", error)

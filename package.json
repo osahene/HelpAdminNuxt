@@ -10,6 +10,9 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.3.6",
+    "@deck.gl/core": "^9.3.6",
+    "@deck.gl/layers": "^9.3.6",
     "@googlemaps/js-api-loader": "^2.1.1",
     "@googlemaps/markerclusterer": "^2.6.2",
     "@headlessui/vue": "^1.7.23",
@@ -26,8 +29,10 @@
     "chart.js": "^4.5.1",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.20",
+    "deck.gl": "^9.3.6",
     "jwt-decode": "^4.0.0",
     "leaflet.heat": "^0.2.0",
+    "maplibre-gl": "^5.24.0",
     "nuxt": "^4.4.2",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.2.2",
