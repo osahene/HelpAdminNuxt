@@ -130,9 +130,10 @@ import {
   ClockIcon, UsersIcon, MapPinIcon
 } from '@heroicons/vue/24/outline'
 import { isAfter } from 'date-fns'
-import { jsPDF } from 'jspdf'
-import { autoTable } from 'jspdf-autotable'
 import DatePicker from '~/components/ui/DatePicker.vue'
+// jsPDF/jspdf-autotable are browser-only — statically importing them here
+// would pull them into the SSR bundle and crash server rendering of this
+// page, so they're loaded dynamically, client-side only, inside buildReportPdf.
 
 definePageMeta({ layout: 'admin' })
 
@@ -255,8 +256,12 @@ const formatSeconds = (s?: number | null) => {
 }
 
 // Builds the PDF entirely on the client from live analytics data, since the
-// backend's report file-generation endpoint isn't implemented.
-const buildReportPdf = (item: GeneratedReport, data: any) => {
+// backend's report file-generation endpoint isn't implemented. jsPDF is
+// dynamically imported so it never loads during SSR.
+const buildReportPdf = async (item: GeneratedReport, data: any) => {
+  const { jsPDF } = await import('jspdf')
+  const { autoTable } = await import('jspdf-autotable')
+
   const doc = new jsPDF()
   doc.setFontSize(16)
   doc.text(item.name, 14, 18)
@@ -322,7 +327,7 @@ const downloadAsPdf = async (item: GeneratedReport) => {
         end: item.period_end || undefined
       }
     })
-    buildReportPdf(item, data)
+    await buildReportPdf(item, data)
   } catch (error) {
     console.error('Failed to build PDF report:', error)
   } finally {
