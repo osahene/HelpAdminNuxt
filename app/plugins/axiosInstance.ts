@@ -62,7 +62,7 @@ export default defineNuxtPlugin(() => {
 
     try {
       const response = await $axios.post(
-        `${baseURL ?? ''}account/token/refresh/`,
+        `${baseURL ?? ''}trap_admin/token/refresh/`,
         { refresh: refreshToken }
       );
 

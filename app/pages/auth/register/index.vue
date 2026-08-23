@@ -51,10 +51,10 @@
           <BriefcaseIcon class="field-icon" />
           <select v-model="form.role" required class="auth-input has-icon appearance-none cursor-pointer">
             <option value="" disabled>Select your role</option>
-            <option value="super_admin">Super Admin</option>
-            <option value="admin">Admin</option>
-            <option value="moderator">Moderator</option>
-            <option value="analyst">Analyst</option>
+            <option class="text-slate-400" value="super_admin">Super Admin</option>
+            <option class="text-slate-400" value="admin">Admin</option>
+            <option class="text-slate-400" value="moderator">Moderator</option>
+            <option class="text-slate-400" value="analyst">Analyst</option>
           </select>
           <ChevronDownIcon class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
         </div>
@@ -70,7 +70,7 @@
             type="email"
             required
             autocomplete="email"
-            placeholder="kofi@safelink.gh"
+            placeholder="Enter your institutional email"
             class="auth-input has-icon"
           />
         </div>

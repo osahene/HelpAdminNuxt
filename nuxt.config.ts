@@ -17,6 +17,8 @@ export default defineNuxtConfig({
         'leaflet', // CJS
         'leaflet.markercluster', // CJS
         '@heroicons/vue/24/solid',
+        'jspdf',
+        'jspdf-autotable',
       ]
     }
   },
