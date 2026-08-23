@@ -107,11 +107,9 @@
             <td class="px-5 py-3.5 text-right">
               <button
                 @click="downloadReport(item)"
-                :disabled="downloadingId === item.id"
-                class="inline-flex items-center gap-1.5 text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 px-2.5 py-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 px-2.5 py-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors opacity-0 group-hover:opacity-100"
               >
-                <ArrowPathIcon v-if="downloadingId === item.id" class="h-3.5 w-3.5 animate-spin" />
-                <ArrowDownTrayIcon v-else class="h-3.5 w-3.5" />
+                <ArrowDownTrayIcon class="h-3.5 w-3.5" />
                 Download
               </button>
             </td>
@@ -131,9 +129,6 @@ import {
 } from '@heroicons/vue/24/outline'
 import { isAfter } from 'date-fns'
 import DatePicker from '~/components/ui/DatePicker.vue'
-// jsPDF/jspdf-autotable are browser-only — statically importing them here
-// would pull them into the SSR bundle and crash server rendering of this
-// page, so they're loaded dynamically, client-side only, inside buildReportPdf.
 
 definePageMeta({ layout: 'admin' })
 
@@ -202,7 +197,6 @@ const reportTypes = ref<ReportType[]>([
 
 const generatedReports = ref<GeneratedReport[]>([])
 const generatingId = ref<string | null>(null)
-const downloadingId = ref<string | null>(null)
 
 const formatDate = (date: string) => new Date(date).toLocaleString()
 
@@ -237,8 +231,7 @@ const generateReport = async (report: ReportType) => {
             start: toDateParam(report.dateRange.start),
             end: toDateParam(report.dateRange.end)
           }
-        : undefined,
-      format: 'pdf'
+        : undefined
     })
     if (data) {
       generatedReports.value.unshift(data)
@@ -250,97 +243,8 @@ const generateReport = async (report: ReportType) => {
   }
 }
 
-const formatSeconds = (s?: number | null) => {
-  if (s === null || s === undefined) return '—'
-  return `${Math.floor(s / 60)}m ${s % 60}s`
-}
-
-// Builds the PDF entirely on the client from live analytics data, since the
-// backend's report file-generation endpoint isn't implemented. jsPDF is
-// dynamically imported so it never loads during SSR.
-const buildReportPdf = async (item: GeneratedReport, data: any) => {
-  const { jsPDF } = await import('jspdf')
-  const { autoTable } = await import('jspdf-autotable')
-
-  const doc = new jsPDF()
-  doc.setFontSize(16)
-  doc.text(item.name, 14, 18)
-  doc.setFontSize(10)
-  doc.setTextColor(110)
-  doc.text(`Period: ${item.period || 'All time'}`, 14, 25)
-  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30)
-
-  let startY = 38
-
-  if (item.report_type === 'monthly-summary') {
-    autoTable(doc, {
-      startY,
-      head: [['Metric', 'Value']],
-      body: [
-        ['Total Alerts', String(data.kpis?.totalAlerts ?? '—')],
-        ['Avg Response Time', formatSeconds(data.kpis?.avgResponseTime)],
-        ['False Alarm Rate', `${data.kpis?.falseAlarmRate ?? 0}%`],
-        ['User Activation Rate', `${data.kpis?.userActivationRate ?? 0}%`],
-      ]
-    })
-    startY = (doc as any).lastAutoTable.finalY + 8
-    autoTable(doc, {
-      startY,
-      head: [['Type', 'Date', 'Count']],
-      body: (data.alertsByTypeTime ?? []).map((r: any) => [r.type, r.date, r.count])
-    })
-  } else if (item.report_type === 'response-time') {
-    autoTable(doc, {
-      startY,
-      head: [['Alert Type', 'Avg Response Time']],
-      body: (data.responseTimeByAgency ?? []).map((r: any) => [r.agency, formatSeconds(r.avgTime)])
-    })
-  } else if (item.report_type === 'user-acquisition') {
-    autoTable(doc, {
-      startY,
-      head: [['Metric', 'Value']],
-      body: [['User Activation Rate', `${data.kpis?.userActivationRate ?? 0}%`]]
-    })
-    startY = (doc as any).lastAutoTable.finalY + 8
-    autoTable(doc, {
-      startY,
-      head: [['Month', 'New Users']],
-      body: (data.userGrowthCoverage ?? []).map((r: any) => [r.month, r.count])
-    })
-  } else if (item.report_type === 'geographic-heatmap') {
-    autoTable(doc, {
-      startY,
-      head: [['Area', 'Alerts', 'Avg Response', 'Dominant Type']],
-      body: (data.hotspots ?? []).map((r: any) => [r.area, r.alertCount, formatSeconds(r.avgResponseTime), r.dominantType])
-    })
-  }
-
-  doc.save(`${item.name.replace(/\s+/g, '-').toLowerCase()}.pdf`)
-}
-
-const downloadAsPdf = async (item: GeneratedReport) => {
-  downloadingId.value = item.id
-  try {
-    const { data } = await $api.analytics({
-      params: {
-        start: item.period_start || undefined,
-        end: item.period_end || undefined
-      }
-    })
-    await buildReportPdf(item, data)
-  } catch (error) {
-    console.error('Failed to build PDF report:', error)
-  } finally {
-    downloadingId.value = null
-  }
-}
-
 const downloadReport = (item: GeneratedReport) => {
-  if (item.format === 'pdf') {
-    downloadAsPdf(item)
-  } else {
-    window.open(item.download_url, '_blank')
-  }
+  window.open(item.download_url, '_blank')
 }
 
 onMounted(loadReports)
