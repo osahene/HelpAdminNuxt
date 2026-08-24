@@ -13,6 +13,9 @@ export default defineNuxtPlugin((nuxtApp) => {
     verifyEmail: (data: any) => $axios.post("/trap_admin/verify-email/", data),
     verifyPin: (data: any) => $axios.post("/trap_admin/verify-pin/", data),
     resendPin: (data: any) => $axios.post("/trap_admin/resend-pin/", data),
+    forgotPassword: (data: { email: string }) => $axios.post("/trap_admin/forgot-password/", data),
+    resetPassword: (data: { uid: string; token: string; password: string; confirm_password: string }) =>
+      $axios.post("/trap_admin/reset-password/", data),
     me: () => $axios.get("/trap_admin/me/"),
     dashboardData: () => $axios.get("/trap_admin/dashboard/"),
     users: (data: any) => $axios.get("/trap_admin/users/", data),

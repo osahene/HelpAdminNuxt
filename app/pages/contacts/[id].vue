@@ -97,26 +97,28 @@
 import { ArrowLeftIcon, CheckCircleIcon, EnvelopeIcon, ArrowPathIcon, BellIcon } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
 import type { Contact } from '~/types'
-
+import { storeToRefs } from 'pinia'
+import { useContactsStore } from '~/stores/contacts'
 definePageMeta({ layout: 'admin' })
 
 const { $api } = useNuxtApp()
 
+const contactsStore = useContactsStore()
+const { selectedContact: contact, loading } = storeToRefs(contactsStore)
+
 const route = useRoute()
 const contactId = route.params.id as string
 
-const contact = ref<any>(null)
 const notifications = ref<any[]>([])
 const loadingNotifications = ref(false)
 
 const loadContactDetail = async () => {
   loadingNotifications.value = true
   try {
-    const [contactRes, notificationsRes] = await Promise.all([
-      $api.contactsId(contactId),
+    const [, notificationsRes] = await Promise.all([
+      contactsStore.fetchContact(contactId),
       $api.contactNotifications(contactId)
     ])
-    contact.value = contactRes.data
     notifications.value = notificationsRes.data || []
   } finally {
     loadingNotifications.value = false
@@ -124,6 +126,8 @@ const loadContactDetail = async () => {
 }
 
 await loadContactDetail()
+
+onUnmounted(() => contactsStore.clearSelectedContact())
 
 const notificationColumns = [
   { key: 'alert_type', label: 'Alert Type' },
@@ -166,6 +170,12 @@ const deliveryStatusBadge = (s: string) => {
 }
 
 const formatDate = (d: string) => new Date(d).toLocaleDateString()
-const inviteContact = async () => { await $api.inviteContact(contactId) }
-const resendInvite = async () => { await $api.resendInvite(contactId) }
+const inviteContact = async () => {
+  await contactsStore.inviteContact(contactId)
+  await contactsStore.fetchContact(contactId)
+}
+const resendInvite = async () => {
+  await contactsStore.resendInvite(contactId)
+  await contactsStore.fetchContact(contactId)
+}
 </script>

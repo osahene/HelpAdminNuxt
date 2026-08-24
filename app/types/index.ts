@@ -10,6 +10,7 @@ id: string
   created_at: string      // Mapped from backend models
   contact_count?: number
   contacts?: Contact[]
+  alerts?: Alert[]
 }
 
 export interface DashboardStats {

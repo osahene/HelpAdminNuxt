@@ -32,7 +32,7 @@
       <div>
         <div class="flex items-center justify-between mb-1.5">
           <label class="auth-label" style="margin-bottom:0">Password</label>
-          <NuxtLink to="/forgot-password" class="text-xs text-sky-400 hover:text-sky-300 transition-colors font-medium">
+          <NuxtLink to="/auth/forgotPassword" class="text-xs text-sky-400 hover:text-sky-300 transition-colors font-medium">
             Forgot password?
           </NuxtLink>
         </div>
@@ -132,10 +132,11 @@ const handleLogin = async () => {
     navigateTo(redirect || '/dashboard')
   } catch (err: any) {
     // AdminLoginSerializer raises all validation failures (bad credentials,
-    // unverified email, not-yet-authorised) as HTTP 400 with the reason in
-    // non_field_errors — it doesn't vary the status code per case.
+    // unverified email, not-yet-authorised) as HTTP 400 with the reason
+    // under "error" — REST_FRAMEWORK.NON_FIELD_ERRORS_KEY is set to 'error'
+    // in settings.py, not DRF's default 'non_field_errors'. It's a list.
     const data = err?.response?.data
-    const message = data?.non_field_errors?.[0] || data?.detail || data?.message
+    const message = Array.isArray(data?.error) ? data.error[0] : (data?.error || data?.detail)
     if (err?.response?.status === 429) {
       error.value = 'Too many attempts. Please wait a few minutes before trying again.'
     } else {

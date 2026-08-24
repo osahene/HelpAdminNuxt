@@ -140,7 +140,7 @@
       <DataTable
         :columns="alertColumns"
         :data="alerts"
-        :loading="loadingAlerts"
+        :loading="loading"
         @row-click="(row) => navigateTo(`/alerts/${row.id}`)"
       >
         <template #cell-type="{ row }">
@@ -157,6 +157,8 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon, BellAlertIcon } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
+import { storeToRefs } from 'pinia'
+import { useUsersStore } from '~/stores/users'
 import type { User, Alert, Contact } from '~/types'
 
 definePageMeta({ layout: 'admin' })
@@ -167,34 +169,17 @@ const { $api } = useNuxtApp()
 const route = useRoute()
 const userId = route.params.id as string
 
-// Initialize refs for holding asynchronously loaded asynchronous metrics securely
-const user = ref<any>(null)
-const contacts = ref<any[]>([])
-const alerts = ref<any[]>([])
-const loadingAlerts = ref(false)
+const usersStore = useUsersStore()
+const { selectedUser: user, loading } = storeToRefs(usersStore)
 
-// Replaces raw macro executions with designated service handlers inside a structured hook execution block
-const loadProfileDashboardData = async () => {
-  loadingAlerts.value = true
-  try {
-    const [userRes, contactsRes, alertsRes] = await Promise.all([
-      $api.usersId(userId),
-      $api.usersIdContacts(userId),
-      $api.usersIdAlerts(userId)
-    ])
-    
-    user.value = userRes.data
-    contacts.value = contactsRes.data || []
-    alerts.value = alertsRes.data || []
-  } catch (error) {
-    console.error('Failed to resolve user profile details metrics:', error)
-  } finally {
-    loadingAlerts.value = false
-  }
-}
+// UserDetailSerializer embeds contacts/alerts directly on the user record —
+// no separate requests needed to populate them.
+const contacts = computed(() => user.value?.contacts ?? [])
+const alerts = computed(() => user.value?.alerts ?? [])
 
-// Fire request sequence
-await loadProfileDashboardData()
+await usersStore.fetchUser(userId)
+
+onUnmounted(() => usersStore.clearSelectedUser())
 
 const approvedContactsCount = computed(() =>
   contacts.value.filter((c: any) => c.status === 'approved').length
@@ -255,7 +240,7 @@ const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString() : '—'
 // Action dispatch methods bound precisely to apiService schemas
 const sendContactReminder = async () => {
   try {
-    await $api.usersIdRemindContacts(userId)
+    await usersStore.sendContactReminder(userId)
     alert('Reminder sent successfully.')
   } catch (err) {
     console.error('Failed dispatching notification queue action:', err)
@@ -266,7 +251,7 @@ const inviteContact = async (contact: any) => {
   try {
     await $api.inviteContact(contact.id)
     alert('Invitation initialized.')
-    await loadProfileDashboardData() // Reload table state
+    await usersStore.fetchUser(userId) // Reload table state
   } catch (err) {
     console.error('Failed triggering registration invite workflow:', err)
   }

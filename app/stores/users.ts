@@ -5,6 +5,7 @@ import type { User } from '~/types'
 export const useUsersStore = defineStore('users', {
   state: () => ({
     users: [] as User[],
+    selectedUser: null as User | null,
     pagination: {
       currentPage: 1,
       totalPages: 1,
@@ -60,6 +61,32 @@ export const useUsersStore = defineStore('users', {
         console.error(`Failed execution dispatching contact profile synchronization reminder for ${userId}:`, error)
         throw error
       }
+    },
+
+    /**
+     * Fetches a single user's detail record — UserDetailSerializer already
+     * embeds `contacts` and `alerts` on this response, so no separate calls
+     * are needed to populate a profile page.
+     */
+    async fetchUser(id: string) {
+      this.loading = true
+      try {
+        const { $api } = useNuxtApp()
+        const response = await $api.usersId(id)
+        const payload = response?.data || response
+        this.selectedUser = payload ?? null
+        return payload
+      } catch (error) {
+        console.error(`Failed loading user detail for ID ${id}:`, error)
+        this.selectedUser = null
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    clearSelectedUser() {
+      this.selectedUser = null
     }
   }
 })

@@ -6,8 +6,8 @@ const PUBLIC_ROUTES = [
   '/auth/register',
   '/auth/verifyEmail',
   '/auth/authPin',
-  '/auth/forgot-password',
-  '/auth/reset-password',
+  '/auth/forgotPassword',
+  '/auth/resetPassword',
 ]
 
 // Role-based access map: route prefix → allowed roles
