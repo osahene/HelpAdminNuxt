@@ -38,7 +38,7 @@ export default defineNuxtConfig({
     // Keys within public are also exposed client-side
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3000/api',
-      baseURL: process.env.VITE_baseURL || 'http://127.0.0.1:8000/',
+      baseURL: process.env.VITE_baseURL || process.env.NUXT_PUBLIC_BASE_URL || 'http://127.0.0.1:8000/',
       mapAPI: process.env.MAP_API_KEY || '',
     }
   },

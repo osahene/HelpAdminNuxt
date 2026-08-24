@@ -50,6 +50,7 @@ export default defineNuxtPlugin(() => {
   const $axios = axios.create({
     baseURL,
     withCredentials: true,
+    timeout: 15000,
     headers: { 'Content-Type': 'application/json' },
   });
 
@@ -174,9 +175,14 @@ export default defineNuxtPlugin(() => {
         if (tokens?.accessToken) {
           req.headers.Authorization = `Bearer ${tokens.accessToken}`;
         } else {
+          // Don't router.push() here: this interceptor runs during SSR too,
+          // and pushing a navigation re-enters auth.global.ts mid-request
+          // (isHydrated isn't set yet), which re-triggers fetchUser() and
+          // this same interceptor again — an unbounded loop within one
+          // request. Clearing the tokens is enough; auth.global.ts already
+          // redirects unauthenticated users on the next route evaluation.
           accessTokenCookie.value = null;
           refreshTokenCookie.value = null;
-          router.push('/auth/login');
         }
       }
     }
