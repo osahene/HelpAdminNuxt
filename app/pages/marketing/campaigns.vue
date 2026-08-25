@@ -67,16 +67,20 @@
 
         <!-- Custom filter -->
         <div v-if="form.recipientType === 'custom'" class="mt-3 p-4 bg-slate-50 dark:bg-slate-700/40 rounded-xl border border-slate-200 dark:border-slate-700">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">Custom Filters</p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-medium text-slate-500 mb-1">Location / Region</label>
-              <input
-                v-model="form.filters.location"
-                type="text"
-                placeholder="e.g. Accra, Greater Accra"
-                class="block w-full px-3 py-2 text-sm bg-white dark:bg-slate-700 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
-              />
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Filter by Location</p>
+          <p class="text-xs text-slate-400 mb-3">Targets users whose most recent alert was triggered in the selected area. Narrow it down as far as you like — country alone is fine.</p>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div v-for="(level, i) in locationLevels" :key="level.key">
+              <label class="block text-xs font-medium text-slate-500 mb-1">{{ level.label }}</label>
+              <select
+                v-model="form.filters[level.key]"
+                @change="onLocationChange(level.key)"
+                :disabled="i > 0 && !form.filters[locationLevels[i - 1].key]"
+                class="block w-full px-2.5 py-2 text-sm bg-white dark:bg-slate-700 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">Any</option>
+                <option v-for="opt in locationOptions[level.key]" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
             </div>
           </div>
         </div>
@@ -265,7 +269,52 @@ const form = reactive({
   channels: ['sms'] as string[],
   subject: '',
   body: '',
-  filters: { location: '' } as Record<string, string>
+  filters: { country: '', region: '', city: '', town: '', locality: '' } as Record<string, string>
+})
+
+const locationLevels = [
+  { key: 'country', label: 'Country' },
+  { key: 'region', label: 'Region' },
+  { key: 'city', label: 'City' },
+  { key: 'town', label: 'Town' },
+  { key: 'locality', label: 'Locality' },
+]
+const locationOptions = reactive<Record<string, string[]>>({
+  country: [], region: [], city: [], town: [], locality: []
+})
+
+const loadLocationOptions = async (level: string) => {
+  const idx = locationLevels.findIndex(l => l.key === level)
+  const parents: Record<string, string> = {}
+  for (let i = 0; i < idx; i++) {
+    const key = locationLevels[i].key
+    if (form.filters[key]) parents[key] = form.filters[key]
+  }
+  try {
+    const res = await $api.campaignsLocationOptions(level, parents)
+    locationOptions[level] = res.data?.options ?? []
+  } catch (error) {
+    console.error('Failed to load location options:', error)
+    locationOptions[level] = []
+  }
+}
+
+const onLocationChange = (changedLevel: string) => {
+  const idx = locationLevels.findIndex(l => l.key === changedLevel)
+  for (let i = idx + 1; i < locationLevels.length; i++) {
+    const key = locationLevels[i].key
+    form.filters[key] = ''
+    locationOptions[key] = []
+  }
+  if (idx + 1 < locationLevels.length) {
+    loadLocationOptions(locationLevels[idx + 1].key)
+  }
+}
+
+watch(() => form.recipientType, (type) => {
+  if (type === 'custom' && !locationOptions.country.length) {
+    loadLocationOptions('country')
+  }
 })
 
 const previewLoading = ref(false)
@@ -301,7 +350,8 @@ const preparePayload = (statusValue: 'draft' | 'sending') => {
 const previewRecipients = async () => {
   previewLoading.value = true
   try {
-    const res = await $api.campaignsPreview(form.recipientType)
+    const filters = form.recipientType === 'custom' ? form.filters : undefined
+    const res = await $api.campaignsPreview(form.recipientType, filters)
     estimatedCount.value = res.data?.count ?? 0
     recipientPreview.value = res.data?.recipients ?? []
     recipientsTruncated.value = !!res.data?.truncated

@@ -88,3 +88,14 @@ export interface Alert {
   created_at: string
   contacts_notified_details?: AlertContactDetail[]
 }
+
+// One row of a DeliveryTimingTable — a "from" event vs a "to" event, with
+// the duration between them computed client-side.
+export interface TimingRow {
+  id: string
+  subject: string
+  meta?: string | null
+  from: string
+  to: string | null
+  status: string
+}

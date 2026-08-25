@@ -164,6 +164,42 @@
       </DataTable>
     </div>
 
+    <!-- Delivery timing -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <DeliveryTimingTable
+        title="Invite Deliveries"
+        :icon="PaperAirplaneIcon"
+        :rows="inviteDeliveryRows"
+        from-label="Triggered"
+        to-label="Delivered"
+        empty-text="No invite deliveries in this range"
+      />
+      <DeliveryTimingTable
+        title="Alert Notifications"
+        :icon="BellAlertIcon"
+        :rows="alertDeliveryRows"
+        from-label="Triggered"
+        to-label="Delivered"
+        empty-text="No alert deliveries in this range"
+      />
+      <DeliveryTimingTable
+        title="Contact Invite Responses"
+        :icon="UserPlusIcon"
+        :rows="contactResponseRows"
+        from-label="Invited"
+        to-label="Responded"
+        empty-text="No contact responses in this range"
+      />
+      <DeliveryTimingTable
+        title="Campaign Deliveries"
+        :icon="MegaphoneIcon"
+        :rows="campaignDeliveryRows"
+        from-label="Sent"
+        to-label="Delivered"
+        empty-text="No campaign deliveries in this range"
+      />
+    </div>
+
   </div>
 </template>
 
@@ -171,7 +207,7 @@
 import {
   CalendarIcon, ArrowPathIcon, BellAlertIcon, ClockIcon,
   ExclamationTriangleIcon, UsersIcon, ChartBarIcon, MapPinIcon, FireIcon,
-  ChevronRightIcon
+  ChevronRightIcon, PaperAirplaneIcon, MegaphoneIcon
 } from '@heroicons/vue/24/outline'
 import { UserPlusIcon } from '@heroicons/vue/24/solid'
 import DatePicker from '~/components/ui/DatePicker.vue'
@@ -181,6 +217,8 @@ import ResponseTimeByAgencyChart from '~/components/admin/Charts/ResponseTimeCha
 import UserGrowthCoverageChart from '~/components/admin/Charts/UserGrowthChart.vue'
 import HeatmapView from '~/components/admin/HeatmapView.vue'
 import DataTable from '~/components/admin/DataTable.vue'
+import DeliveryTimingTable from '~/components/admin/DeliveryTimingTable.vue'
+import type { TimingRow } from '~/types'
 
 definePageMeta({ layout: 'admin' })
 
@@ -195,6 +233,46 @@ const userGrowthCoverage = ref([])
 const heatmapData = ref([])
 const hotspots = ref<any[]>([])
 const loadingHotspots = ref(false)
+
+const inviteDeliveries = ref<any[]>([])
+const alertDeliveries = ref<any[]>([])
+const contactResponseTimes = ref<any[]>([])
+const campaignDeliveries = ref<any[]>([])
+
+const inviteDeliveryRows = computed<TimingRow[]>(() => inviteDeliveries.value.map(d => ({
+  id: d.id,
+  subject: d.contact || 'Unknown contact',
+  meta: `${d.channel} via ${d.provider}`,
+  from: d.triggeredAt,
+  to: d.deliveredAt,
+  status: d.state,
+})))
+
+const alertDeliveryRows = computed<TimingRow[]>(() => alertDeliveries.value.map(d => ({
+  id: d.id,
+  subject: d.contact || (d.alertId ? `Alert #${d.alertId.slice(0, 8)}` : 'Unknown contact'),
+  meta: `${d.channel} via ${d.provider}`,
+  from: d.triggeredAt,
+  to: d.deliveredAt,
+  status: d.state,
+})))
+
+const contactResponseRows = computed<TimingRow[]>(() => contactResponseTimes.value.map(d => ({
+  id: d.id,
+  subject: d.contact || 'Unknown contact',
+  from: d.invitedAt,
+  to: d.respondedAt,
+  status: d.status,
+})))
+
+const campaignDeliveryRows = computed<TimingRow[]>(() => campaignDeliveries.value.map(d => ({
+  id: d.id,
+  subject: d.campaign || 'Campaign',
+  meta: `${d.recipient || 'Unknown recipient'} · ${d.channel} via ${d.provider}`,
+  from: d.sentAt,
+  to: d.deliveredAt,
+  status: d.state,
+})))
 
 // Alert Hotspots drill-down: country -> region -> city -> town -> locality,
 // matching the geo fields on the Emergency model.
@@ -266,6 +344,10 @@ const fetchAnalytics = async () => {
       userGrowthCoverage.value = data.userGrowthCoverage
       heatmapData.value = data.heatmap
       hotspots.value = data.hotspots
+      inviteDeliveries.value = data.inviteDeliveries ?? []
+      alertDeliveries.value = data.alertDeliveries ?? []
+      contactResponseTimes.value = data.contactResponseTimes ?? []
+      campaignDeliveries.value = data.campaignDeliveries ?? []
     }
   } finally {
     loadingHotspots.value = false
