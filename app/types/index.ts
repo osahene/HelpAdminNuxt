@@ -95,6 +95,7 @@ export interface TimingRow {
   id: string
   subject: string
   meta?: string | null
+  provider?: string | null
   from: string
   to: string | null
   status: string

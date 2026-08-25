@@ -256,7 +256,7 @@ import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } fro
 import {
   ArrowLeftIcon, UsersIcon, ArrowPathIcon, EnvelopeIcon,
   DevicePhoneMobileIcon, PaperAirplaneIcon, UserGroupIcon,
-  ExclamationTriangleIcon, UserPlusIcon, XMarkIcon
+  ExclamationTriangleIcon, UserPlusIcon, XMarkIcon, IdentificationIcon
 } from '@heroicons/vue/24/outline'
 
 definePageMeta({ layout: 'admin' })
@@ -331,6 +331,7 @@ const recipientOptions = [
   { value: 'all_users', label: 'All Users', description: 'Every registered app user', icon: UsersIcon },
   { value: 'low_contacts', label: 'Low Coverage', description: 'Users with fewer than 5 contacts', icon: ExclamationTriangleIcon },
   { value: 'non_user_contacts', label: 'Unregistered Contacts', description: 'Contacts who haven\'t signed up', icon: UserPlusIcon },
+  { value: 'all_contacts', label: 'All Contacts', description: 'Every user and every saved contact, deduped by phone number', icon: IdentificationIcon },
   { value: 'custom', label: 'Custom Filter', description: 'Define your own audience', icon: UserGroupIcon },
 ]
 
