@@ -57,37 +57,54 @@ export default defineNuxtPlugin(() => {
   // ----------------------------------------------------------------
   // Refresh token logic (moved inside to access cookies easily)
   // ----------------------------------------------------------------
+  const refreshClient = axios.create({
+    baseURL,
+    withCredentials: true,
+    timeout: 15000,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  let refreshRequest: Promise<{ accessToken: string; refreshToken: string } | null> | null = null;
+
   const takeRefreshToken = async () => {
     const refreshToken = refreshTokenCookie.value;
     if (!refreshToken) return null;
+    if (refreshRequest) return refreshRequest;
+
+    refreshRequest = (async () => {
+      try {
+        const response = await refreshClient.post(
+          `${baseURL ?? ''}/trap_admin/token/refresh/`,
+          { refresh: refreshToken }
+        );
+
+        const { access, refresh } = response.data;
+        if (access) {
+          $axios.defaults.headers.common.Authorization = `Bearer ${access}`;
+
+          accessTokenCookie.value = access;
+          if (refresh) {
+            refreshTokenCookie.value = refresh;
+          }
+          return { accessToken: access, refreshToken: refresh || refreshToken };
+        }
+        return null;
+      } catch (error) {
+        let errorMessage = 'Error refreshing token';
+        if (axios.isAxiosError(error) && error.response?.data?.detail) {
+          errorMessage = error.response.data.detail;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        showErrorNotification(errorMessage);
+        return null;
+      }
+    })();
 
     try {
-      const response = await $axios.post(
-        `${baseURL ?? ''}/trap_admin/token/refresh/`,
-        { refresh: refreshToken }
-      );
-
-      const { access, refresh } = response.data;
-      if (access) {
-        $axios.defaults.headers.common.Authorization = `Bearer ${access}`;
-        
-        // Save to cookies instead of localStorage
-        accessTokenCookie.value = access;
-        if (refresh) {
-          refreshTokenCookie.value = refresh;
-        }
-        return { accessToken: access, refreshToken: refresh || refreshToken };
-      }
-      return null;
-    } catch (error) {
-      let errorMessage = 'Error refreshing token';
-      if (axios.isAxiosError(error) && error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      showErrorNotification(errorMessage);
-      return null;
+      return await refreshRequest;
+    } finally {
+      refreshRequest = null;
     }
   };
 
