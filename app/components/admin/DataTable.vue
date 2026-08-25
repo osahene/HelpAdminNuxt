@@ -49,11 +49,8 @@
           v-for="(row, index) in data"
           v-else
           :key="index"
-          class="group transition-colors"
-          :class="[
-            onClick ? 'cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-700/30' : '',
-          ]"
-          @click="onClick ? $emit('row-click', row) : undefined"
+          class="group transition-colors cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-700/30"
+          @click="emit('row-click', row)"
         >
           <td
             v-for="col in columns"
@@ -87,13 +84,9 @@ const props = defineProps<{
   skeletonRows?: number
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'row-click', row: any): void
 }>()
-
-// Detect if parent listens to row-click (Vue normalizes @row-click -> onRowClick)
-const attrs = useAttrs()
-const onClick = computed(() => !!attrs.onRowClick)
 
 const skeletonWidths = ['60%', '80%', '45%', '70%', '55%', '75%', '50%']
 
