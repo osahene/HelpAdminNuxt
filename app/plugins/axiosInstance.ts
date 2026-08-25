@@ -78,10 +78,13 @@ export default defineNuxtPlugin(() => {
         { refresh: refreshToken }
       );
 
-      const { access, refresh } = response.data;
+      // AdminTokenRefreshView (main_admin) returns the access JWT under
+      // `token`, matching AdminLoginView's response shape — not the
+      // `access` key stock SimpleJWT's TokenRefreshView uses.
+      const { token: access, refresh } = response.data;
       if (access) {
         $axios.defaults.headers.common.Authorization = `Bearer ${access}`;
-        
+
         // Save to cookies instead of localStorage
         accessTokenCookie.value = access;
         if (refresh) {
