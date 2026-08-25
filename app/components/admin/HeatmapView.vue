@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-72 w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900">
+  <div ref="wrapperEl" :class="['relative w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900', isFullscreen ? 'h-screen' : 'h-72']">
     <!-- MapLibre and Deck.gl share this container -->
     <div ref="mapContainer" class="h-full w-full absolute inset-0 z-0" />
 
@@ -20,29 +20,84 @@
     </Transition>
 
     <div v-if="mapReady && points?.length"
-      class="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm px-2.5 py-1.5 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700/60">
-      <span class="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-      <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ points.length }} hotspots</span>
+      class="absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm px-2.5 py-1.5 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700/60 max-w-[calc(100%-5.5rem)]">
+      <span v-for="type in presentTypes" :key="type" class="flex items-center gap-1">
+        <span class="h-2 w-2 rounded-full shrink-0" :style="{ backgroundColor: alertColor(type) }"></span>
+        <span class="text-[11px] font-medium text-slate-600 dark:text-slate-300 capitalize">{{ type }}</span>
+      </span>
+      <span class="text-[11px] text-slate-400 border-l border-slate-200 dark:border-slate-600 pl-2">{{ points.length }} alerts</span>
     </div>
+
+    <button
+      type="button"
+      @click="toggleFullscreen"
+      :title="isFullscreen ? 'Exit fullscreen' : 'Expand map'"
+      class="absolute top-3 right-3 z-20 p-1.5 rounded-lg bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-slate-200/80 dark:border-slate-700/60 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 shadow-sm transition-colors"
+    >
+      <ArrowsPointingInIcon v-if="isFullscreen" class="h-4 w-4" />
+      <ArrowsPointingOutIcon v-else class="h-4 w-4" />
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, shallowRef } from 'vue'
-import { MapIcon } from '@heroicons/vue/24/outline'
+import { ref, computed, watch, onMounted, onUnmounted, shallowRef } from 'vue'
+import { MapIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon } from '@heroicons/vue/24/outline'
 import { Deck } from '@deck.gl/core'
-import { HeatmapLayer } from '@deck.gl/aggregation-layers'
+import { ScatterplotLayer } from '@deck.gl/layers'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css' // Crucial for map tiles formatting
 
-type PointData = { lat: number; lng: number; intensity?: number }
+type PointData = { lat: number; lng: number; intensity?: number; type?: string }
 
 const props = defineProps<{
   points: Array<PointData>
 }>()
 
+// Same palette as AlertMap.vue's getAlertColor, kept in sync so an alert
+// type reads as the same color everywhere in the admin.
+const ALERT_COLORS: Record<string, string> = {
+  robbery: '#ef4444',
+  health: '#22c55e',
+  fire: '#f97316',
+  flood: '#3b82f6',
+  violence: '#a855f7',
+}
+const DEFAULT_COLOR = '#6b7280'
+const alertColor = (type?: string) => ALERT_COLORS[type ?? ''] ?? DEFAULT_COLOR
+const hexToRgb = (hex: string): [number, number, number] => [
+  parseInt(hex.slice(1, 3), 16),
+  parseInt(hex.slice(3, 5), 16),
+  parseInt(hex.slice(5, 7), 16),
+]
+
+const presentTypes = computed(() => {
+  const seen = new Set<string>()
+  for (const p of props.points) if (p.type) seen.add(p.type)
+  return Array.from(seen)
+})
+
+// No key/style-JSON fetch required (unlike the previous stadiamaps.com URL,
+// which 404'd — CORS Missing Allow Origin — since it needs an API key).
+// Raster tiles as plain images sidestep that: CARTO serves them with an
+// open Access-Control-Allow-Origin.
+const basemapStyle = (dark: boolean) => ({
+  version: 8 as const,
+  sources: {
+    basemap: {
+      type: 'raster' as const,
+      tiles: [0, 1, 2, 3].map(n => `https://${'abcd'[n]}.basemaps.cartocdn.com/${dark ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`),
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors © CARTO',
+    },
+  },
+  layers: [{ id: 'basemap', type: 'raster' as const, source: 'basemap' }],
+})
+
+const wrapperEl = ref<HTMLElement | null>(null)
 const mapContainer = ref<HTMLElement | null>(null)
 const mapReady = ref(false)
+const isFullscreen = ref(false)
 
 const deckInstance = shallowRef<Deck | null>(null)
 const mapInstance = shallowRef<any | null>(null)
@@ -60,35 +115,60 @@ const getInitialViewState = () => {
   }
 }
 
-const createHeatmapLayer = () => {
-  return new HeatmapLayer<PointData>({
-    id: 'HeatmapLayer',
+const createScatterLayer = () => {
+  return new ScatterplotLayer<PointData>({
+    id: 'AlertPointsLayer',
     data: props.points,
-    aggregation: 'SUM',
+    pickable: true,
+    stroked: true,
     getPosition: (d: PointData) => [d.lng, d.lat],
-    getWeight: (d: PointData) => d.intensity ?? 0.5,
-    radiusPixels: 25,
-    opacity: 0.8
+    getFillColor: (d: PointData) => [...hexToRgb(alertColor(d.type)), 200],
+    getLineColor: [255, 255, 255, 220],
+    lineWidthMinPixels: 1,
+    getRadius: (d: PointData) => 40 + (d.intensity ?? 0.5) * 40,
+    radiusMinPixels: 5,
+    radiusMaxPixels: 18,
   })
 }
 
 const drawPoints = () => {
   if (!deckInstance.value) return
   deckInstance.value.setProps({
-    layers: [createHeatmapLayer()]
+    layers: [createScatterLayer()]
+  })
+}
+
+const toggleFullscreen = async () => {
+  if (!wrapperEl.value) return
+  if (!document.fullscreenElement) {
+    await wrapperEl.value.requestFullscreen?.()
+  } else {
+    await document.exitFullscreen?.()
+  }
+}
+
+const onFullscreenChange = () => {
+  isFullscreen.value = document.fullscreenElement === wrapperEl.value
+  // MapLibre/deck.gl both observe their container's size, but a fullscreen
+  // transition can land a frame before that observer fires — nudge both.
+  requestAnimationFrame(() => {
+    mapInstance.value?.resize()
   })
 }
 
 onMounted(() => {
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+
   if (!mapContainer.value) return
 
   try {
     const viewState = getInitialViewState()
+    const isDark = document.documentElement.classList.contains('dark')
 
     // 1. Initialize MapLibre GL Basemap
     mapInstance.value = new maplibregl.Map({
       container: mapContainer.value,
-      style: 'https://stadiamaps.com/styles/alidade_smooth.json', // Basemap style
+      style: basemapStyle(isDark) as any,
       center: [viewState.longitude, viewState.latitude],
       zoom: viewState.zoom,
       interactive: false // Let deck.gl handle zoom/pan interactions
@@ -99,7 +179,7 @@ onMounted(() => {
       parent: mapContainer.value,
       initialViewState: viewState,
       controller: true,
-      layers: [createHeatmapLayer()],
+      layers: [createScatterLayer()],
       // Synchronize changes made by user mouse scrolling / panning
       onViewStateChange: ({ viewState }) => {
         mapInstance.value.jumpTo({
@@ -124,6 +204,7 @@ watch(() => props.points, () => {
 }, { deep: true })
 
 onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
   if (deckInstance.value) {
     deckInstance.value.finalize()
     deckInstance.value = null

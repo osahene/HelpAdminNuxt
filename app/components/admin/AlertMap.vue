@@ -1,11 +1,23 @@
 <template>
-  <div ref="mapContainer" class="h-full w-full rounded-lg"></div>
+  <div ref="wrapperEl" :class="['relative w-full h-full', isFullscreen ? 'bg-white dark:bg-slate-900' : '']">
+    <div ref="mapContainer" class="h-full w-full rounded-lg"></div>
+    <button
+      type="button"
+      @click="toggleFullscreen"
+      :title="isFullscreen ? 'Exit fullscreen' : 'Expand map'"
+      class="absolute top-3 right-3 z-20 p-1.5 rounded-lg bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-slate-200/80 dark:border-slate-700/60 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 shadow-sm transition-colors"
+    >
+      <ArrowsPointingInIcon v-if="isFullscreen" class="h-4 w-4" />
+      <ArrowsPointingOutIcon v-else class="h-4 w-4" />
+    </button>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 import { MarkerClusterer } from '@googlemaps/markerclusterer'
+import { ArrowsPointingOutIcon, ArrowsPointingInIcon } from '@heroicons/vue/24/outline'
 import type { Alert } from '~/types'
 
 
@@ -20,7 +32,9 @@ const emit = defineEmits<{
   (e: 'marker-click', alert: Alert): void
 }>()
 
+const wrapperEl = ref<HTMLElement | null>(null)
 const mapContainer = ref<HTMLElement | null>(null)
+const isFullscreen = ref(false)
 let map: google.maps.Map | null = null
 let markerCluster: MarkerClusterer | null = null
 let markers: google.maps.Marker[] = []
@@ -145,8 +159,29 @@ const getAlertColor = (type: string): string => {
 // React to Pinia state changes
 watch(() => props.alerts, updateMarkers, { deep: true })
 
+const toggleFullscreen = async () => {
+  if (!wrapperEl.value) return
+  if (!document.fullscreenElement) {
+    await wrapperEl.value.requestFullscreen?.()
+  } else {
+    await document.exitFullscreen?.()
+  }
+}
+
+const onFullscreenChange = () => {
+  isFullscreen.value = document.fullscreenElement === wrapperEl.value
+  // Google Maps doesn't observe container resizes on its own — nudge it,
+  // then re-center since fitBounds/idle already ran against the old size.
+  if (map) {
+    const center = map.getCenter()
+    google.maps.event.trigger(map, 'resize')
+    if (center) map.setCenter(center)
+  }
+}
+
 onMounted(() => {
-  // The Loader automatically handles checking if window is available, 
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+  // The Loader automatically handles checking if window is available,
   // so we don't strictly need a process.client check, but it's safe to keep if preferred.
   if (process.client) {
     initMap()
@@ -154,6 +189,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
   if (markerCluster) {
     markerCluster.clearMarkers()
   }

@@ -97,6 +97,24 @@
             ≈ <span class="font-semibold text-slate-700 dark:text-slate-300">{{ estimatedCount.toLocaleString() }}</span> recipients
           </span>
         </div>
+
+        <div v-if="recipientPreview.length" class="mt-3 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden max-w-sm">
+          <table class="min-w-full">
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
+              <tr v-for="(name, i) in recipientPreview.slice(0, 3)" :key="i">
+                <td class="px-3 py-2 text-sm text-slate-700 dark:text-slate-300">{{ name }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <button
+            v-if="estimatedCount && estimatedCount > 0"
+            type="button"
+            @click="showAllRecipients = true"
+            class="w-full text-center text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 px-3 py-2 bg-slate-50 dark:bg-slate-700/40 border-t border-slate-200 dark:border-slate-700 transition-colors"
+          >
+            View all {{ estimatedCount.toLocaleString() }}
+          </button>
+        </div>
       </div>
 
       <!-- Step 3: Channels -->
@@ -182,14 +200,59 @@
       </div>
     </div>
 
+    <TransitionRoot as="template" :show="showAllRecipients">
+      <Dialog as="div" class="relative z-50" @close="showAllRecipients = false">
+        <TransitionChild
+          as="template"
+          enter="ease-out duration-200" enter-from="opacity-0" enter-to="opacity-100"
+          leave="ease-in duration-150" leave-from="opacity-100" leave-to="opacity-0"
+        >
+          <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" />
+        </TransitionChild>
+
+        <div class="fixed inset-0 overflow-y-auto">
+          <div class="flex min-h-full items-center justify-center p-4">
+            <TransitionChild
+              as="template"
+              enter="ease-out duration-200" enter-from="opacity-0 scale-95" enter-to="opacity-100 scale-100"
+              leave="ease-in duration-150" leave-from="opacity-100 scale-100" leave-to="opacity-0 scale-95"
+            >
+              <DialogPanel class="w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                  <DialogTitle class="text-sm font-semibold text-slate-900 dark:text-white">
+                    Recipients ({{ estimatedCount?.toLocaleString() ?? recipientPreview.length }})
+                  </DialogTitle>
+                  <button
+                    @click="showAllRecipients = false"
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <XMarkIcon class="h-5 w-5" />
+                  </button>
+                </div>
+                <ul class="max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60">
+                  <li v-for="(name, i) in recipientPreview" :key="i" class="px-5 py-2.5 text-sm text-slate-700 dark:text-slate-300">
+                    {{ name }}
+                  </li>
+                </ul>
+                <p v-if="recipientsTruncated" class="px-5 py-3 text-xs text-slate-400 border-t border-slate-100 dark:border-slate-700">
+                  Showing the first {{ recipientPreview.length.toLocaleString() }} of {{ estimatedCount?.toLocaleString() }} recipients.
+                </p>
+              </DialogPanel>
+            </TransitionChild>
+          </div>
+        </div>
+      </Dialog>
+    </TransitionRoot>
+
   </div>
 </template>
 
 <script setup lang="ts">
+import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue'
 import {
   ArrowLeftIcon, UsersIcon, ArrowPathIcon, EnvelopeIcon,
   DevicePhoneMobileIcon, PaperAirplaneIcon, UserGroupIcon,
-  ExclamationTriangleIcon, UserPlusIcon
+  ExclamationTriangleIcon, UserPlusIcon, XMarkIcon
 } from '@heroicons/vue/24/outline'
 
 definePageMeta({ layout: 'admin' })
@@ -207,6 +270,9 @@ const form = reactive({
 
 const previewLoading = ref(false)
 const estimatedCount = ref<number | null>(null)
+const recipientPreview = ref<string[]>([])
+const recipientsTruncated = ref(false)
+const showAllRecipients = ref(false)
 const sending = ref(false)
 
 const charCount = computed(() => form.body.length)
@@ -235,8 +301,10 @@ const preparePayload = (statusValue: 'draft' | 'sending') => {
 const previewRecipients = async () => {
   previewLoading.value = true
   try {
-    const res = await $api.campaignsPreview(form.recipientType) 
+    const res = await $api.campaignsPreview(form.recipientType)
     estimatedCount.value = res.data?.count ?? 0
+    recipientPreview.value = res.data?.recipients ?? []
+    recipientsTruncated.value = !!res.data?.truncated
   } catch (error) {
     console.error("Failed to fetch recipient preview:", error)
   } finally {

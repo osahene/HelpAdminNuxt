@@ -105,13 +105,25 @@
               </span>
             </td>
             <td class="px-5 py-3.5 text-right">
-              <button
-                @click="downloadReport(item)"
-                class="inline-flex items-center gap-1.5 text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 px-2.5 py-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors opacity-0 group-hover:opacity-100"
-              >
-                <ArrowDownTrayIcon class="h-3.5 w-3.5" />
-                Download
-              </button>
+              <div class="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                <button
+                  @click="downloadReport(item)"
+                  :disabled="downloadingId === item.id"
+                  class="inline-flex items-center gap-1.5 text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 px-2.5 py-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors"
+                >
+                  <ArrowPathIcon v-if="downloadingId === item.id" class="h-3.5 w-3.5 animate-spin" />
+                  <ArrowDownTrayIcon v-else class="h-3.5 w-3.5" />
+                  Download
+                </button>
+                <button
+                  @click="deleteReport(item)"
+                  :disabled="deletingId === item.id"
+                  class="inline-flex items-center gap-1.5 text-xs font-medium text-red-500 hover:text-red-600 dark:text-red-400 px-2.5 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                >
+                  <ArrowPathIcon v-if="deletingId === item.id" class="h-3.5 w-3.5 animate-spin" />
+                  <TrashIcon v-else class="h-3.5 w-3.5" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -125,7 +137,7 @@
 import {
   CalendarIcon, ArrowPathIcon, DocumentArrowDownIcon,
   DocumentTextIcon, ArrowDownTrayIcon, ChartBarIcon,
-  ClockIcon, UsersIcon, MapPinIcon
+  ClockIcon, UsersIcon, MapPinIcon, TrashIcon
 } from '@heroicons/vue/24/outline'
 import { isAfter } from 'date-fns'
 import DatePicker from '~/components/ui/DatePicker.vue'
@@ -197,6 +209,8 @@ const reportTypes = ref<ReportType[]>([
 
 const generatedReports = ref<GeneratedReport[]>([])
 const generatingId = ref<string | null>(null)
+const downloadingId = ref<string | null>(null)
+const deletingId = ref<string | null>(null)
 
 const formatDate = (date: string) => new Date(date).toLocaleString()
 
@@ -243,8 +257,39 @@ const generateReport = async (report: ReportType) => {
   }
 }
 
-const downloadReport = (item: GeneratedReport) => {
-  window.open(item.download_url, '_blank')
+// Downloaded through the authenticated axios instance (not window.open on
+// download_url) — a bare navigation wouldn't carry the admin's bearer token.
+const downloadReport = async (item: GeneratedReport) => {
+  downloadingId.value = item.id
+  try {
+    const response = await $api.reportsDownload(item.id)
+    const blob = new Blob([response.data], { type: response.headers['content-type'] || 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${item.report_type || item.name}.${item.format || 'csv'}`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Failed to download report:', error)
+  } finally {
+    downloadingId.value = null
+  }
+}
+
+const deleteReport = async (item: GeneratedReport) => {
+  if (!confirm(`Delete "${item.name}"? This can't be undone.`)) return
+  deletingId.value = item.id
+  try {
+    await $api.reportsDelete(item.id)
+    generatedReports.value = generatedReports.value.filter(r => r.id !== item.id)
+  } catch (error) {
+    console.error('Failed to delete report:', error)
+  } finally {
+    deletingId.value = null
+  }
 }
 
 onMounted(loadReports)
