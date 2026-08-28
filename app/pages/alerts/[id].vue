@@ -18,7 +18,7 @@
               {{ statusLabel(alert?.status) }}
             </span>
             <span v-if="alert?.type" :class="typeBadgeClass(alert.type)">
-              {{ alert.type }}
+              {{ typeLabel(alert.type) }}
             </span>
           </div>
           <p class="text-xs text-slate-400 mt-0.5">Triggered {{ alert?.created_at ? formatDistanceToNow(new Date(alert.created_at)) + ' ago' : '' }}</p>
@@ -51,7 +51,7 @@
           <div :class="['h-10 w-10 rounded-xl flex items-center justify-center shrink-0', typeIconBg(alert?.type)]">
             <component :is="typeIcon(alert?.type)" :class="['h-5 w-5', typeIconColor(alert?.type)]" />
           </div>
-          <span class="text-lg font-bold text-slate-900 dark:text-white capitalize">{{ alert?.type || '—' }}</span>
+          <span class="text-lg font-bold text-slate-900 dark:text-white">{{ alert?.type ? typeLabel(alert.type) : '—' }}</span>
         </div>
       </div>
       <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-5">
@@ -332,17 +332,21 @@ const getInitials = (name?: string) => {
   return p.length > 1 ? p[0][0] + p[1][0] : name.slice(0, 2).toUpperCase()
 }
 
-const typeConfig: Record<string, { pill: string; dot: string; bg: string; color: string }> = {
-  'Robbery Attack': { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500' },
-  'Health Crisis': { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
-  'Fire Outbreak': { pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500' },
-  'Flood Alert': { pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500' },
-  'Violence Alert': { pill: 'text-purple-700 bg-purple-50 dark:text-purple-300 dark:bg-purple-500/10', dot: 'bg-purple-500' },
-  'Call Emergency': { pill: 'text-yellow-700 bg-yellow-50 dark:text-yellow-300 dark:bg-yellow-500/10', dot: 'bg-yellow-500' },
+// Keyed by the raw action code the backend actually sends on `alert.type`
+// (AlertListSerializer's `type` is `source='action'` over Emergency.ALERT_TYPES:
+// robbery/health/fire/flood/violence/other) — not a display string.
+const typeConfig: Record<string, { label: string; pill: string; dot: string; bg: string; color: string }> = {
+  robbery: { label: 'Robbery Attack', pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500', bg: 'bg-red-100 dark:bg-red-500/15', color: 'text-red-600 dark:text-red-400' },
+  health: { label: 'Health Crisis', pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/15', color: 'text-emerald-600 dark:text-emerald-400' },
+  fire: { label: 'Fire Outbreak', pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/15', color: 'text-orange-600 dark:text-orange-400' },
+  flood: { label: 'Flood Alert', pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/15', color: 'text-blue-600 dark:text-blue-400' },
+  violence: { label: 'Violence Alert', pill: 'text-purple-700 bg-purple-50 dark:text-purple-300 dark:bg-purple-500/10', dot: 'bg-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/15', color: 'text-purple-600 dark:text-purple-400' },
+  other: { label: 'Other', pill: 'text-yellow-700 bg-yellow-50 dark:text-yellow-300 dark:bg-yellow-500/10', dot: 'bg-yellow-500', bg: 'bg-yellow-100 dark:bg-yellow-500/15', color: 'text-yellow-600 dark:text-yellow-400' },
 }
 
 const typeBadgeClass = (t?: string) =>
-  `inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${typeConfig[t || '']?.pill ?? 'text-slate-600 bg-slate-100'}`
+  `inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${typeConfig[t || '']?.pill ?? 'text-slate-600 bg-slate-100'}`
+const typeLabel = (t?: string) => typeConfig[t || '']?.label ?? t
 const typeIconBg = (t?: string) => typeConfig[t || '']?.bg ?? 'bg-slate-100 dark:bg-slate-700'
 const typeIconColor = (t?: string) => typeConfig[t || '']?.color ?? 'text-slate-500'
 const typeIcon = (t?: string) => ({ fire: FireIcon, health: HeartIcon, robbery: BoltIcon }[t || ''] || ExclamationTriangleIcon)

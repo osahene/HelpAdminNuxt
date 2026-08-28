@@ -15,8 +15,9 @@
       </div>
     </div>
 
-    <!-- Campaign form -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
+    <!-- Campaign form + live preview -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+    <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm overflow-hidden">
 
       <!-- Step 1: Basic info -->
       <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700">
@@ -33,6 +34,63 @@
             placeholder="e.g. August Safety Reminder"
             class="block w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-all"
           />
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Category</label>
+            <select
+              v-model="form.category"
+              class="block w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-all"
+            >
+              <option v-for="opt in categoryOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+            <p class="text-[11px] text-slate-400 mt-1.5">Sets the color/label shown on the resulting Titbit and drives the "In-App" channel's category.</p>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Icon</label>
+            <input
+              v-model="form.icon"
+              type="text"
+              maxlength="8"
+              placeholder="🌨️"
+              class="block w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-all"
+            />
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              <button
+                v-for="emoji in iconPresets"
+                :key="emoji"
+                type="button"
+                @click="form.icon = emoji"
+                class="h-8 w-8 flex items-center justify-center text-base rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                {{ emoji }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Image (optional)</label>
+          <input ref="imageInputRef" type="file" accept="image/*" class="hidden" @change="onImageSelected" />
+          <div v-if="imagePreviewUrl" class="flex items-center gap-3">
+            <img :src="imagePreviewUrl" alt="" class="h-16 w-16 rounded-xl object-cover border border-slate-200 dark:border-slate-600" />
+            <button
+              type="button"
+              @click="clearImage"
+              class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 border border-red-200 dark:border-red-500/30 transition-colors"
+            >
+              <XMarkIcon class="h-3.5 w-3.5" /> Remove
+            </button>
+          </div>
+          <button
+            v-else
+            type="button"
+            @click="imageInputRef?.click()"
+            class="inline-flex items-center gap-1.5 text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 px-3 py-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30 transition-colors"
+          >
+            <PhotoIcon class="h-3.5 w-3.5" /> Choose image
+          </button>
         </div>
       </div>
 
@@ -127,22 +185,27 @@
           <div class="h-5 w-5 rounded-full bg-sky-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">3</div>
           <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Delivery Channels</h2>
         </div>
-        <div class="flex gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <label
-            v-for="channel in ['sms', 'email']"
-            :key="channel"
+            v-for="opt in channelOptions"
+            :key="opt.value"
             :class="[
-              'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border cursor-pointer transition-all select-none',
-              form.channels.includes(channel)
+              'flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all select-none',
+              form.channels.includes(opt.value)
                 ? 'border-sky-400 bg-sky-50 dark:bg-sky-500/10 dark:border-sky-500/50'
-                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
             ]"
           >
-            <input type="checkbox" :value="channel" v-model="form.channels" class="sr-only" />
-            <component :is="channel === 'sms' ? DevicePhoneMobileIcon : EnvelopeIcon" :class="['h-4 w-4', form.channels.includes(channel) ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400']" />
-            <span :class="['text-sm font-medium', form.channels.includes(channel) ? 'text-sky-700 dark:text-sky-300' : 'text-slate-600 dark:text-slate-300']">
-              {{ channel.toUpperCase() }}
-            </span>
+            <input type="checkbox" :value="opt.value" v-model="form.channels" class="sr-only" />
+            <div :class="['h-8 w-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5', form.channels.includes(opt.value) ? 'bg-sky-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500']">
+              <component :is="opt.icon" class="h-4 w-4" />
+            </div>
+            <div>
+              <p :class="['text-sm font-medium', form.channels.includes(opt.value) ? 'text-sky-700 dark:text-sky-300' : 'text-slate-800 dark:text-slate-200']">
+                {{ opt.label }}
+              </p>
+              <p class="text-xs text-slate-400 mt-0.5">{{ opt.description }}</p>
+            </div>
           </label>
         </div>
       </div>
@@ -204,6 +267,55 @@
       </div>
     </div>
 
+    <!-- Live preview: mirrors the Titbit card layout used elsewhere
+         (helpnext's NotificationListItem.jsx / notificationCategory.js) so
+         what the admin sees here is a faithful preview of what recipients
+         will actually see in their in-app notification inbox. -->
+    <div class="lg:sticky lg:top-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Live Preview</p>
+      <div
+        class="rounded-2xl border p-4"
+        style="background: #fff; border-color: #EEF1FA;"
+      >
+        <div class="flex items-start gap-3">
+          <span
+            class="shrink-0 flex items-center justify-center rounded-[10px]"
+            :style="{ width: '40px', height: '40px', background: previewMeta.bg, fontSize: '18px' }"
+          >
+            {{ previewIcon }}
+          </span>
+          <div class="min-w-0 flex-1">
+            <span
+              class="block text-[11.5px] font-bold uppercase tracking-wide"
+              :style="{ color: previewMeta.color }"
+            >
+              {{ previewMeta.label }}
+            </span>
+            <span class="block text-[14.5px] font-bold mt-0.5" style="color: #14213D;">
+              {{ previewTitle }}
+            </span>
+            <span class="block text-[13.5px] mt-0.5 leading-relaxed" style="color: #5B6483;">
+              {{ previewBody }}
+            </span>
+            <img
+              v-if="imagePreviewUrl"
+              :src="imagePreviewUrl"
+              alt=""
+              class="block w-full mt-2.5 rounded-xl object-cover"
+              style="max-height: 200px;"
+            />
+            <span class="block mt-2 text-[11.5px] italic" style="color: #8A93B3;">
+              Source: HelpOoHelp Team
+            </span>
+          </div>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-2">
+        This is how the message will look as an in-app Titbit (channel: <strong>in_app</strong>). SMS/Email delivery uses the subject/body text only.
+      </p>
+    </div>
+    </div>
+
     <TransitionRoot as="template" :show="showAllRecipients">
       <Dialog as="div" class="relative z-50" @close="showAllRecipients = false">
         <TransitionChild
@@ -256,7 +368,8 @@ import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } fro
 import {
   ArrowLeftIcon, UsersIcon, ArrowPathIcon, EnvelopeIcon,
   DevicePhoneMobileIcon, PaperAirplaneIcon, UserGroupIcon,
-  ExclamationTriangleIcon, UserPlusIcon, XMarkIcon, IdentificationIcon
+  ExclamationTriangleIcon, UserPlusIcon, XMarkIcon, IdentificationIcon,
+  PhotoIcon, BellIcon, BellAlertIcon
 } from '@heroicons/vue/24/outline'
 
 definePageMeta({ layout: 'admin' })
@@ -267,10 +380,78 @@ const form = reactive({
   name: '',
   recipientType: 'all_users' as string,
   channels: ['sms'] as string[],
+  category: 'general' as string,
+  icon: '' as string,
+  image: null as File | null,
   subject: '',
   body: '',
   filters: { country: '', region: '', city: '', town: '', locality: '' } as Record<string, string>
 })
+
+// Category shown on the resulting Titbit/in-app Notification — kept in sync
+// by hand with main_admin.models.Campaign.CATEGORY_CHOICES /
+// notifications.models.CATEGORY_CHOICES.
+const categoryOptions = [
+  { value: 'weather', label: 'Weather' },
+  { value: 'hazard', label: 'Hazard / Safety Alert' },
+  { value: 'seasonal', label: 'Seasonal Advisory' },
+  { value: 'general', label: 'General Announcement' },
+  { value: 'system', label: 'System' },
+]
+
+// Visual language for each category, matching helpnext's shared
+// notificationCategory.js (src/utils/notificationCategory.js) so the
+// preview card here reads the same way a Titbit will look in the app/web
+// inbox — except "general", which uses this admin app's own primary accent
+// (sky, used throughout HelpAdminNuxt) rather than helpnext's brand blue.
+// A concretely-typed (non-indexed) fallback so lookups against the arbitrary
+// string keys below stay `T | undefined` under noUncheckedIndexedAccess,
+// while this default itself is always definitely present.
+const DEFAULT_CATEGORY_META = { label: 'General', color: '#0ea5e9', bg: '#F0F9FF', icon: '📢' }
+const categoryMeta: Record<string, { label: string; color: string; bg: string; icon: string }> = {
+  weather: { label: 'Weather', color: '#2563EB', bg: '#EFF6FF', icon: '🌦️' },
+  hazard: { label: 'Hazard', color: '#DC2626', bg: '#FEF2F2', icon: '⚠️' },
+  seasonal: { label: 'Seasonal', color: '#D97706', bg: '#FFFBEB', icon: '🍂' },
+  general: DEFAULT_CATEGORY_META,
+  system: { label: 'System', color: '#6B7280', bg: '#F3F4F6', icon: '⚙️' },
+}
+
+const iconPresets = ['🌨️', '🔥', '🌊', '⚠️', '📢', '🌾', '☀️']
+
+const channelOptions = [
+  { value: 'sms', label: 'SMS', description: "Sends a text message to the recipient's phone number.", icon: DevicePhoneMobileIcon },
+  { value: 'email', label: 'Email', description: "Sends an email to the recipient's registered address.", icon: EnvelopeIcon },
+  { value: 'in_app', label: 'In-App', description: "Appears in the user's notification inbox in the app and on the website.", icon: BellIcon },
+  { value: 'push', label: 'Push', description: "Sends a push notification to the user's phone or browser, if they've enabled it.", icon: BellAlertIcon },
+]
+
+// --- Image upload ---
+const imageInputRef = ref<HTMLInputElement | null>(null)
+const imagePreviewUrl = ref<string | null>(null)
+
+const onImageSelected = (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0] ?? null
+  if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
+  form.image = file
+  imagePreviewUrl.value = file ? URL.createObjectURL(file) : null
+}
+
+const clearImage = () => {
+  if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
+  form.image = null
+  imagePreviewUrl.value = null
+  if (imageInputRef.value) imageInputRef.value.value = ''
+}
+
+onUnmounted(() => {
+  if (imagePreviewUrl.value) URL.revokeObjectURL(imagePreviewUrl.value)
+})
+
+// --- Live preview ---
+const previewMeta = computed(() => categoryMeta[form.category] ?? DEFAULT_CATEGORY_META)
+const previewIcon = computed(() => form.icon.trim() || previewMeta.value.icon)
+const previewTitle = computed(() => form.subject.trim() || form.name.trim() || 'Campaign title')
+const previewBody = computed(() => form.body.trim() || 'Your message will appear here as you type…')
 
 const locationLevels = [
   { key: 'country', label: 'Country' },
@@ -335,16 +516,51 @@ const recipientOptions = [
   { value: 'custom', label: 'Custom Filter', description: 'Define your own audience', icon: UserGroupIcon },
 ]
 
-// Helper to map camelCase frontend data to snake_case backend keys
-const preparePayload = (statusValue: 'draft' | 'sending') => {
-  return {
+// Helper to map camelCase frontend data to snake_case backend keys. When an
+// image is attached this switches to multipart/form-data (the campaign
+// endpoint's CampaignCreateSerializer accepts an `image` FileField); with no
+// image it stays a plain JSON POST like before.
+const buildCampaignPayload = (statusValue: 'draft' | 'sending'): { data: any; config?: Record<string, any> } => {
+  const base = {
     name: form.name,
     recipient_type: form.recipientType, // Mapped to Django model
     channels: form.channels,
+    category: form.category,
+    icon: form.icon,
     subject: form.subject,
     body: form.body,
     filters: form.recipientType === 'custom' ? form.filters : {},
     status: statusValue
+  }
+
+  if (!form.image) {
+    return { data: base }
+  }
+
+  // JSONField values (channels, filters) have to travel as JSON-encoded
+  // strings over multipart form-data — DRF's JSONField parses a string
+  // value with json.loads when it arrives via MultiPartParser.
+  const fd = new FormData()
+  fd.append('name', base.name)
+  fd.append('recipient_type', base.recipient_type)
+  fd.append('channels', JSON.stringify(base.channels))
+  fd.append('category', base.category)
+  fd.append('icon', base.icon)
+  fd.append('subject', base.subject)
+  fd.append('body', base.body)
+  fd.append('filters', JSON.stringify(base.filters))
+  fd.append('status', base.status)
+  fd.append('image', form.image)
+
+  return {
+    data: fd,
+    // app/plugins/axiosInstance.ts hardcodes 'Content-Type: application/json'
+    // as an instance default. Left alone, axios's transformRequest would see
+    // that JSON content type and silently re-serialize this FormData back
+    // into a JSON string instead of sending it as multipart. Overriding it
+    // here defeats that check; axios then clears it again before send so the
+    // browser can fill in the correct multipart boundary itself.
+    config: { headers: { 'Content-Type': 'multipart/form-data' } },
   }
 }
 
@@ -366,8 +582,8 @@ const previewRecipients = async () => {
 const sendCampaign = async () => {
   sending.value = true
   try {
-    const payload = preparePayload('sending')
-    await $api.campaigns(payload) // Hits POST /trap_admin/campaigns/
+    const { data, config } = buildCampaignPayload('sending')
+    await $api.campaigns(data, config) // Hits POST /trap_admin/campaigns/
     navigateTo('/marketing')
   } catch (error) {
     console.error("Failed to dispatch campaign:", error)
@@ -378,8 +594,8 @@ const sendCampaign = async () => {
 
 const saveDraft = async () => {
   try {
-    const payload = preparePayload('draft')
-    await $api.campaigns(payload) // Hits POST /trap_admin/campaigns/
+    const { data, config } = buildCampaignPayload('draft')
+    await $api.campaigns(data, config) // Hits POST /trap_admin/campaigns/
     navigateTo('/marketing')
   } catch (error) {
     console.error("Failed to save draft:", error)

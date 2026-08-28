@@ -67,7 +67,10 @@ export interface AlertContactDetail {
 
 export interface Alert {
   id: string
-  type: 'Robbery Attack' | 'Health Crisis' | 'Fire Outbreak' | 'Flood Alert' | 'Violence Alert' | 'Call Emergency'
+  // Raw lowercase action code, as produced by AlertListSerializer
+  // (`type = serializers.CharField(source='action')` over Emergency.ALERT_TYPES)
+  // — not a display string. Map to a human label client-side when rendering.
+  type: 'robbery' | 'health' | 'fire' | 'flood' | 'violence' | 'other'
   action?: string             // Handled directly inside backend views
   status: 'active' | 'resolved' | 'false_alarm'
   userId?: string

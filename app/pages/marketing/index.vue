@@ -48,10 +48,22 @@
           </div>
         </template>
 
+        <template #cell-category="{ row }">
+          <span
+            class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-semibold rounded-full"
+            :style="{ color: categoryMeta[row.category]?.color ?? DEFAULT_CATEGORY_META.color, background: categoryMeta[row.category]?.bg ?? DEFAULT_CATEGORY_META.bg }"
+          >
+            <span>{{ row.icon || categoryMeta[row.category]?.icon || DEFAULT_CATEGORY_META.icon }}</span>
+            {{ categoryMeta[row.category]?.label ?? 'General' }}
+          </span>
+        </template>
+
         <template #cell-channels="{ row }">
           <div class="flex gap-1">
             <span v-if="row.channels?.includes('sms')" class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 rounded">SMS</span>
             <span v-if="row.channels?.includes('email')" class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 rounded">Email</span>
+            <span v-if="row.channels?.includes('in_app')" class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400 rounded">In-App</span>
+            <span v-if="row.channels?.includes('push')" class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 rounded">Push</span>
           </div>
         </template>
 
@@ -120,6 +132,18 @@
 
                       <div class="grid grid-cols-2 gap-4">
                         <div>
+                          <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Category</dt>
+                          <dd class="mt-1">
+                            <span
+                              class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold rounded-full"
+                              :style="{ color: categoryMeta[selectedCampaign.category]?.color ?? DEFAULT_CATEGORY_META.color, background: categoryMeta[selectedCampaign.category]?.bg ?? DEFAULT_CATEGORY_META.bg }"
+                            >
+                              <span>{{ selectedCampaign.icon || categoryMeta[selectedCampaign.category]?.icon || DEFAULT_CATEGORY_META.icon }}</span>
+                              {{ categoryMeta[selectedCampaign.category]?.label ?? 'General' }}
+                            </span>
+                          </dd>
+                        </div>
+                        <div>
                           <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Audience</dt>
                           <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ audienceLabel(selectedCampaign.recipient_type || selectedCampaign.recipientType) }}</dd>
                         </div>
@@ -175,6 +199,13 @@
                         <div class="bg-slate-50 dark:bg-slate-700/60 rounded-xl p-4 border border-slate-200/80 dark:border-slate-600/60">
                           <p v-if="selectedCampaign.subject" class="text-sm font-semibold text-slate-900 dark:text-white mb-2">{{ selectedCampaign.subject }}</p>
                           <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{{ selectedCampaign.body }}</p>
+                          <img
+                            v-if="selectedCampaign.image"
+                            :src="selectedCampaign.image"
+                            alt=""
+                            class="block w-full mt-3 rounded-lg object-cover"
+                            style="max-height: 220px;"
+                          />
                         </div>
                       </div>
 
@@ -220,12 +251,28 @@ const selectedCampaign = ref<any>(null)
 // Support dynamic formatting with safe case key mapping fallback
 const columns = [
   { key: 'name', label: 'Campaign' },
+  { key: 'category', label: 'Category' },
   { key: 'channels', label: 'Channels' },
   { key: 'recipient_type', label: 'Audience', format: (v: string) => audienceLabel(v) },
   { key: 'sent_at', label: 'Sent', format: (v: string) => v ? new Date(v).toLocaleDateString() : 'Draft' },
   { key: 'status', label: 'Status' },
   { key: 'stats', label: 'Delivery' },
 ]
+
+// Kept in sync by hand with main_admin.models.Campaign.CATEGORY_CHOICES /
+// notifications.models.CATEGORY_CHOICES — same palette used in the
+// composer's live preview (app/pages/marketing/campaigns.vue).
+// DEFAULT_CATEGORY_META is a concretely-typed (non-indexed) fallback so it
+// stays definitely-defined under noUncheckedIndexedAccess, unlike
+// categoryMeta[...] lookups against an arbitrary string key.
+const DEFAULT_CATEGORY_META = { label: 'General', color: '#0ea5e9', bg: '#F0F9FF', icon: '📢' }
+const categoryMeta: Record<string, { label: string; color: string; bg: string; icon: string }> = {
+  weather: { label: 'Weather', color: '#2563EB', bg: '#EFF6FF', icon: '🌦️' },
+  hazard: { label: 'Hazard', color: '#DC2626', bg: '#FEF2F2', icon: '⚠️' },
+  seasonal: { label: 'Seasonal', color: '#D97706', bg: '#FFFBEB', icon: '🍂' },
+  general: DEFAULT_CATEGORY_META,
+  system: { label: 'System', color: '#6B7280', bg: '#F3F4F6', icon: '⚙️' },
+}
 
 const summaryStats = computed(() => [
   { label: 'Total Campaigns', value: campaigns.value.length },
@@ -251,6 +298,8 @@ const statusConfig: Record<string, { pill: string; dot: string }> = {
   draft:   { pill: 'text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-700', dot: 'bg-slate-400' },
   sending: { pill: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10', dot: 'bg-amber-500' },
   sent:    { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
+  // At least one requested channel dispatched, at least one did not.
+  partial: { pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500' },
   failed:  { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500' },
 }
 const statusBadge = (s: string) =>

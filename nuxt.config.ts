@@ -39,6 +39,11 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3000/api',
       baseURL: process.env.VITE_baseURL || process.env.NUXT_PUBLIC_BASE_URL || 'http://127.0.0.1:8000/',
+      // Base for the admin realtime WebSocket, without the trailing
+      // `/admin/` path — useRealtime.ts appends `admin/?token=...` itself,
+      // so this should NOT end in a slash. Mirrors the same host:port as
+      // baseURL's local-dev default, just over ws:// instead of http://.
+      wsBase: process.env.NUXT_PUBLIC_WS_BASE || 'ws://127.0.0.1:8000/ws',
       mapAPI: process.env.MAP_API_KEY || '',
     }
   },

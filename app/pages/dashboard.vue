@@ -170,7 +170,7 @@
               <td class="px-5 py-3.5 whitespace-nowrap">
                 <span :class="alertTypeBadgeClass(alert.type)">
                   <span :class="alertTypeDotClass(alert.type)" class="inline-block h-1.5 w-1.5 rounded-full mr-1.5"></span>
-                  {{ alert.type }}
+                  {{ alertTypeLabel(alert.type) }}
                 </span>
               </td>
 
@@ -294,21 +294,25 @@ const getInitials = (name?: string) => {
     : name.slice(0, 2).toUpperCase()
 }
 
-const alertTypeConfig: Record<string, { pill: string; dot: string }> = {
-  'Robbery Attack': { pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500' },
-  'Health Crisis': { pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
-  'Fire Outbreak': { pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500' },
-  'Flood Alert': { pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500' },
-  'Violence Alert': { pill: 'text-purple-700 bg-purple-50 dark:text-purple-300 dark:bg-purple-500/10', dot: 'bg-purple-500' },
-  'Call Emergency': { pill: 'text-yellow-700 bg-yellow-50 dark:text-yellow-300 dark:bg-yellow-500/10', dot: 'bg-yellow-500' },
+// Keyed by the raw action code the backend actually sends on `alert.type`
+// (AlertListSerializer's `type` is `source='action'` over Emergency.ALERT_TYPES:
+// robbery/health/fire/flood/violence/other) — not a display string.
+const alertTypeConfig: Record<string, { label: string; pill: string; dot: string }> = {
+  robbery: { label: 'Robbery Attack', pill: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', dot: 'bg-red-500' },
+  health: { label: 'Health Crisis', pill: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
+  fire: { label: 'Fire Outbreak', pill: 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10', dot: 'bg-orange-500' },
+  flood: { label: 'Flood Alert', pill: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', dot: 'bg-blue-500' },
+  violence: { label: 'Violence Alert', pill: 'text-purple-700 bg-purple-50 dark:text-purple-300 dark:bg-purple-500/10', dot: 'bg-purple-500' },
+  other: { label: 'Other', pill: 'text-yellow-700 bg-yellow-50 dark:text-yellow-300 dark:bg-yellow-500/10', dot: 'bg-yellow-500' },
 }
 
 const alertTypeBadgeClass = (type: string) => {
   const cfg = alertTypeConfig[type]
-  return `inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${cfg?.pill ?? 'text-slate-600 bg-slate-100 dark:bg-slate-700'}`
+  return `inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${cfg?.pill ?? 'text-slate-600 bg-slate-100 dark:bg-slate-700'}`
 }
 
 const alertTypeDotClass = (type: string) => alertTypeConfig[type]?.dot ?? 'bg-slate-400'
+const alertTypeLabel = (type: string) => alertTypeConfig[type]?.label ?? type
 
 const handleAlertClick = (alert: Alert) => navigateTo(`/alerts/${alert.id}`)
 const refreshMap = () => analyticsStore.fetchActiveAlerts()
