@@ -8,11 +8,13 @@
           <div class="flex items-center gap-3">
             <div class="h-8 w-8 rounded-lg bg-sky-500 flex items-center justify-center shadow-lg shadow-sky-500/30">
               <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 10c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286z" />
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 10c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286z" />
               </svg>
             </div>
             <span class="text-white font-semibold text-base tracking-wide">Help OO Help</span>
-            <span class="text-[10px] text-sky-400 font-medium bg-sky-500/15 px-1.5 py-0.5 rounded uppercase tracking-widest">Admin</span>
+            <span
+              class="text-[10px] text-sky-400 font-medium bg-sky-500/15 px-1.5 py-0.5 rounded uppercase tracking-widest">Admin</span>
           </div>
         </div>
 
@@ -29,7 +31,9 @@
           <SidebarLink to="/alerts" icon="BellAlertIcon">
             Alerts
             <template #badge>
-              <span class="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white">{{ stats.activeAlerts }}</span>
+              <span
+                class="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white">{{
+                  stats.activeAlerts }}</span>
             </template>
           </SidebarLink>
 
@@ -52,7 +56,8 @@
         <div class="px-4 py-3 mx-3 mb-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
           <div class="flex items-center gap-2">
             <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span
+                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             <span class="text-xs text-emerald-400 font-medium">System Online</span>
@@ -62,14 +67,16 @@
         <!-- User section -->
         <div class="shrink-0 border-t border-slate-700/50 p-4">
           <div class="flex items-center gap-3">
-            <div class="h-8 w-8 rounded-full bg-linear-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-md shrink-0">
+            <div
+              class="h-8 w-8 rounded-full bg-linear-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-md shrink-0">
               {{ userInitials }}
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-slate-200 truncate">{{ user?.name || 'Admin User' }}</p>
               <p class="text-[11px] text-slate-500 truncate">{{ user?.email || 'admin@helpoohelp.com' }}</p>
             </div>
-            <button @click="logout" title="Logout" class="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-500/10">
+            <button @click="logout" title="Logout"
+              class="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-500/10">
               <ArrowRightStartOnRectangleIcon class="h-4 w-4" />
             </button>
           </div>
@@ -80,30 +87,19 @@
     <!-- ===== MOBILE SIDEBAR (slide-over) ===== -->
     <TransitionRoot as="template" :show="sidebarOpen">
       <Dialog as="div" class="fixed inset-0 z-40 flex md:hidden" @close="sidebarOpen = false">
-        <TransitionChild
-          as="template"
-          enter="transition-opacity ease-linear duration-300"
-          enter-from="opacity-0"
-          enter-to="opacity-100"
-          leave="transition-opacity ease-linear duration-300"
-          leave-from="opacity-100"
-          leave-to="opacity-0"
-        >
+        <TransitionChild as="template" enter="transition-opacity ease-linear duration-300" enter-from="opacity-0"
+          enter-to="opacity-100" leave="transition-opacity ease-linear duration-300" leave-from="opacity-100"
+          leave-to="opacity-0">
           <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" />
         </TransitionChild>
 
-        <TransitionChild
-          as="template"
-          enter="transition ease-in-out duration-300 transform"
-          enter-from="-translate-x-full"
-          enter-to="translate-x-0"
-          leave="transition ease-in-out duration-300 transform"
-          leave-from="translate-x-0"
-          leave-to="-translate-x-full"
-        >
+        <TransitionChild as="template" enter="transition ease-in-out duration-300 transform"
+          enter-from="-translate-x-full" enter-to="translate-x-0" leave="transition ease-in-out duration-300 transform"
+          leave-from="translate-x-0" leave-to="-translate-x-full">
           <div class="relative flex-1 flex flex-col max-w-xs w-full safelink-sidebar">
             <div class="absolute top-0 right-0 -mr-12 pt-2">
-              <button @click="sidebarOpen = false" class="ml-1 flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white">
+              <button @click="sidebarOpen = false"
+                class="ml-1 flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white">
                 <XMarkIcon class="h-6 w-6" />
               </button>
             </div>
@@ -111,8 +107,10 @@
             <div class="flex items-center h-16 px-5 safelink-sidebar-brand">
               <div class="flex items-center gap-3">
                 <div class="h-8 w-8 rounded-lg bg-sky-500 flex items-center justify-center">
-                  <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 10c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286z" />
+                  <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 10c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286z" />
                   </svg>
                 </div>
                 <span class="text-white font-semibold text-base">Help OO Help Admin</span>
@@ -126,6 +124,7 @@
               <SidebarLink to="/alerts" icon="BellAlertIcon">Alerts</SidebarLink>
               <SidebarLink to="/analytics" icon="ChartBarIcon">Analytics</SidebarLink>
               <SidebarLink to="/reports" icon="DocumentTextIcon">Reports</SidebarLink>
+              <SidebarLink to="/marketing" icon="MegaphoneIcon">Marketing</SidebarLink>
               <SidebarLink to="/settings" icon="CogIcon">Settings</SidebarLink>
             </nav>
           </div>
@@ -157,7 +156,7 @@ import AdminHeader from '~/components/admin/Header.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useAuth } from '~/composables/useAuth'
 import { useDarkMode } from '~/composables/useDarkMode'
-import {useAnalyticsStore} from '~/stores/analytics'
+import { useAnalyticsStore } from '~/stores/analytics'
 
 
 const analyticsStore = useAnalyticsStore()
