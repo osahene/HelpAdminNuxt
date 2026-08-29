@@ -3,6 +3,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig, type AxiosInst
 import { jwtDecode } from 'jwt-decode';
 import dayjs from 'dayjs';
 import { defineNuxtPlugin, useRuntimeConfig, useRouter, useCookie } from '#app';
+import { useToast } from '#imports';
 
 // ----------------------------------------------------------------------
 // Types
@@ -28,17 +29,26 @@ const hideLoading = () => {
   console.log('[Loading] hide');
 };
 
-const showErrorNotification = (message: string) => {
-  console.error('[Notification]', message);
-};
-
 // ----------------------------------------------------------------------
 // Plugin definition
 // ----------------------------------------------------------------------
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig();
   const router = useRouter();
   const baseURL = config.public.baseURL as string | undefined;
+
+  // Toasts are a client-only UI concept (nobody sees SSR output), and this
+  // interceptor can fire for requests made during SSR data-fetching where
+  // there's no guarantee we're still inside the synchronous Nuxt context by
+  // the time the rejection resolves. `nuxtApp.runWithContext` re-enters that
+  // context explicitly so `useToast()` (which relies on `useNuxtApp()`
+  // internally) resolves correctly regardless of when this callback runs.
+  const showErrorNotification = (message: string, title = 'Something went wrong') => {
+    if (!process.client) return;
+    nuxtApp.runWithContext(() => {
+      useToast().add({ title, description: message, color: 'error' });
+    });
+  };
 
   // 1. Initialize our cookies right at the top of the plugin
   // These will work seamlessly on both Server (SSR) and Client (Browser)
@@ -214,6 +224,19 @@ export default defineNuxtPlugin(() => {
     },
     (error: AxiosError) => {
       hideLoading();
+
+      // Only surface a generic toast here for failures no page/store is in a
+      // position to explain: the network being down (no response at all) or
+      // an unexpected server-side error (5xx). Ordinary 4xx responses are
+      // left to the calling code, which already turns them into specific,
+      // contextual messages (e.g. login's field-level validation errors) —
+      // a blanket toast on top of those would just be duplicate noise.
+      if (!error.response) {
+        showErrorNotification('Unable to reach the server. Please check your connection and try again.');
+      } else if (error.response.status >= 500) {
+        showErrorNotification('The server ran into a problem processing that request. Please try again shortly.');
+      }
+
       return Promise.reject(error);
     }
   );

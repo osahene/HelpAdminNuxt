@@ -244,6 +244,11 @@ const sendContactReminder = async () => {
     alert('Reminder sent successfully.')
   } catch (err) {
     console.error('Failed dispatching notification queue action:', err)
+    useToast().add({
+      title: 'Reminder not sent',
+      description: 'Could not send the contact reminder. Please try again.',
+      color: 'error',
+    })
   }
 }
 
@@ -254,6 +259,11 @@ const inviteContact = async (contact: any) => {
     await usersStore.fetchUser(userId) // Reload table state
   } catch (err) {
     console.error('Failed triggering registration invite workflow:', err)
+    useToast().add({
+      title: 'Invitation failed',
+      description: 'Could not send the registration invite. Please try again.',
+      color: 'error',
+    })
   }
 }
 
@@ -263,6 +273,11 @@ const resendInvite = async (contactId: string) => {
     alert('Invitation resent successfully.')
   } catch (err) {
     console.error('Failed retry dispatching mechanism sequence:', err)
+    useToast().add({
+      title: 'Invitation not resent',
+      description: 'Could not resend the invitation. Please try again.',
+      color: 'error',
+    })
   }
 }
 </script>

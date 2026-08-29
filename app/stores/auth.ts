@@ -91,14 +91,13 @@ export const useAuthStore = defineStore('auth', {
           this.refresh = payload.refresh ?? null
           this.user = payload.user ?? null
 
-          // Sync auth state locally if client conditions match
-          if (process.client) {
-            localStorage.setItem('auth_token', this.token as string)
-            if (this.refresh) {
-              localStorage.setItem('refresh_token', this.refresh)
-            }
-            localStorage.setItem('auth_user', JSON.stringify(this.user))
-          }
+          // The user profile is display-only (no credential material), so it
+          // lives in Pinia's in-memory state — fetchUser() re-populates it
+          // from `/trap_admin/me/` on every fresh load anyway (see below and
+          // middleware/auth.global.ts). The tokens themselves must NOT be
+          // duplicated into localStorage: cookies (below) are the single
+          // source of truth the axios plugin reads, and anything sitting in
+          // localStorage is readable by any injected script (XSS exposure).
 
           // Store under the same cookie names the axios plugin reads to build
           // the Authorization header (see plugins/axiosInstance.ts) — writing
@@ -128,6 +127,10 @@ export const useAuthStore = defineStore('auth', {
         const accessTokenCookie = useCookie<string | null>('accessToken')
         this.token = accessTokenCookie.value ?? null
       }
+      if (!this.refresh) {
+        const refreshTokenCookie = useCookie<string | null>('refreshToken')
+        this.refresh = refreshTokenCookie.value ?? null
+      }
 
       if (!this.token) {
         this.isHydrated = true
@@ -138,9 +141,21 @@ export const useAuthStore = defineStore('auth', {
         const { $api } = useNuxtApp()
         const response = await $api.me()
         this.user = response?.data || response
-      } catch (error) {
+      } catch (error: any) {
         console.error('Session restoration request dropped:', error)
         this.clearAuth()
+        // Only editorialize with "session expired" for an actual auth
+        // rejection (401/403). A network blip or 5xx here already gets a
+        // generic toast from the axios response interceptor — adding a
+        // second, more specific-but-wrong toast on top would be misleading.
+        const status = error?.response?.status
+        if (process.client && (status === 401 || status === 403)) {
+          useToast().add({
+            title: 'Session expired',
+            description: 'Please sign in again to continue.',
+            color: 'error',
+          })
+        }
       } finally {
         this.isHydrated = true
       }
@@ -150,10 +165,11 @@ export const useAuthStore = defineStore('auth', {
     async logout() {
       try {
         const { $api } = useNuxtApp()
-        if (process.client && !this.refresh) {
-          this.refresh = localStorage.getItem('refresh_token')
+        if (!this.refresh) {
+          const refreshTokenCookie = useCookie<string | null>('refreshToken')
+          this.refresh = refreshTokenCookie.value ?? null
         }
-        
+
         if (this.refresh) {
           await $api.logout({ refresh: this.refresh })
         }
@@ -166,21 +182,16 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // ── Synchronous Storage Hydration Hooks ─────────────────────────────────
+    // Restores token state from the auth cookies (the single source of
+    // truth also read by plugins/axiosInstance.ts). The user profile isn't
+    // persisted anywhere — fetchUser() re-fetches it from `/trap_admin/me/`.
     initializeFromStorage() {
-      if (process.client) {
-        const token = localStorage.getItem('auth_token')
-        const refresh = localStorage.getItem('refresh_token')
-        const user = localStorage.getItem('auth_user')
-        
-        if (token && user) {
-          this.token = token
-          this.refresh = refresh
-          try {
-            this.user = JSON.parse(user)
-          } catch {
-            this.clearAuth()
-          }
-        }
+      const accessTokenCookie = useCookie<string | null>('accessToken')
+      const refreshTokenCookie = useCookie<string | null>('refreshToken')
+
+      if (accessTokenCookie.value) {
+        this.token = accessTokenCookie.value
+        this.refresh = refreshTokenCookie.value ?? null
       }
     },
 
@@ -188,12 +199,6 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.token = null
       this.refresh = null
-      
-      if (process.client) {
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('auth_user')
-      }
 
       const accessTokenCookie = useCookie('accessToken')
       accessTokenCookie.value = null

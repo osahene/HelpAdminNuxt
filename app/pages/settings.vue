@@ -362,14 +362,23 @@ const privacy = reactive<PrivacySettings>({
 })
 
 onMounted(async () => {
-  const { data } = await $api.settings() as { data: SettingsResponse }
-  const settings = data.value
-  if (!settings) return
+  try {
+    const { data } = await $api.settings() as { data: SettingsResponse }
+    const settings = data.value
+    if (!settings) return
 
-  if (settings.general) Object.assign(general, settings.general)
-  if (settings.templates) templates.value = settings.templates
-  if (settings.integrations) Object.assign(integrations, settings.integrations)
-  if (settings.privacy) Object.assign(privacy, settings.privacy)
+    if (settings.general) Object.assign(general, settings.general)
+    if (settings.templates) templates.value = settings.templates
+    if (settings.integrations) Object.assign(integrations, settings.integrations)
+    if (settings.privacy) Object.assign(privacy, settings.privacy)
+  } catch (error) {
+    console.error('Failed to load settings:', error)
+    useToast().add({
+      title: 'Failed to load settings',
+      description: 'Could not load the current settings. Please refresh the page.',
+      color: 'error',
+    })
+  }
 })
 
 const saveGeneralSettings = async () => {
@@ -378,6 +387,11 @@ const saveGeneralSettings = async () => {
     // TODO: show success notification
   } catch (error) {
     console.error('Failed to save general settings:', error)
+    useToast().add({
+      title: 'Save failed',
+      description: 'Could not save general settings. Please try again.',
+      color: 'error',
+    })
   }
 }
 
@@ -386,6 +400,11 @@ const saveTemplates = async () => {
     await $api.settingsTemplates(templates.value)
   } catch (error) {
     console.error('Failed to save templates:', error)
+    useToast().add({
+      title: 'Save failed',
+      description: 'Could not save message templates. Please try again.',
+      color: 'error',
+    })
   }
 }
 
@@ -394,6 +413,11 @@ const saveIntegrations = async () => {
     await $api.settingsIntegrations(integrations)
   } catch (error) {
     console.error('Failed to save integrations:', error)
+    useToast().add({
+      title: 'Save failed',
+      description: 'Could not save integration settings. Please try again.',
+      color: 'error',
+    })
   }
 }
 
@@ -402,6 +426,11 @@ const savePrivacy = async () => {
     await $api.settingsPrivacy(privacy)
   } catch (error) {
     console.error('Failed to save privacy settings:', error)
+    useToast().add({
+      title: 'Save failed',
+      description: 'Could not save privacy settings. Please try again.',
+      color: 'error',
+    })
   }
 }
 const testConnection = async () => {

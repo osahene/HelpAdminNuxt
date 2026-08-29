@@ -45,6 +45,13 @@ export const useContactsStore = defineStore('contacts', {
         console.error('Failed fetching app emergency contact register directories:', error)
         this.contacts = []
         this.pagination.total = 0
+        if (process.client) {
+          useToast().add({
+            title: 'Failed to load contacts',
+            description: 'Could not load the contacts list. Please refresh the page.',
+            color: 'error',
+          })
+        }
       } finally {
         this.loading = false
       }
@@ -55,13 +62,22 @@ export const useContactsStore = defineStore('contacts', {
       try {
         const { $api } = useNuxtApp()
         const response = await $api.contactsId(id)
-        
+
         const payload = response?.data || response
         this.selectedContact = payload ?? null
         return payload
       } catch (error) {
         console.error(`Failed loading target metadata timeline view context for ID ${id}:`, error)
         this.selectedContact = null
+        // Callers (pages/contacts/[id].vue) await this with no catch of
+        // their own, so this toast is the only feedback the admin gets.
+        if (process.client) {
+          useToast().add({
+            title: 'Failed to load contact',
+            description: 'Could not load this contact. Please try again.',
+            color: 'error',
+          })
+        }
         throw error
       } finally {
         this.loading = false
@@ -75,11 +91,20 @@ export const useContactsStore = defineStore('contacts', {
         return response?.data || response
       } catch (error) {
         console.error(`Failed executing registration dispatch protocol rules for contact ${id}:`, error)
+        // Callers (pages/contacts/index.vue and pages/contacts/[id].vue)
+        // invoke this with no try/catch of their own.
+        if (process.client) {
+          useToast().add({
+            title: 'Invitation failed',
+            description: 'Could not send the registration invite. Please try again.',
+            color: 'error',
+          })
+        }
         throw error
       }
     },
 
-  
+
     async resendInvite(id: string) {
       try {
         const { $api } = useNuxtApp()
@@ -87,6 +112,13 @@ export const useContactsStore = defineStore('contacts', {
         return response?.data || response
       } catch (error) {
         console.error(`Failed executing infrastructure re-invite operation commands on ID ${id}:`, error)
+        if (process.client) {
+          useToast().add({
+            title: 'Invitation not resent',
+            description: 'Could not resend the invitation. Please try again.',
+            color: 'error',
+          })
+        }
         throw error
       }
     },

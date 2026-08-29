@@ -320,6 +320,13 @@ const fetchCampaigns = async () => {
   } catch (error) {
     console.error('Error loading analytics marketing campaigns:', error)
     campaigns.value = []
+    if (process.client) {
+      useToast().add({
+        title: 'Failed to load campaigns',
+        description: 'Could not load the campaign list. Please refresh the page.',
+        color: 'error',
+      })
+    }
   } finally {
     loading.value = false
   }

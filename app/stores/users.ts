@@ -48,10 +48,20 @@ export const useUsersStore = defineStore('users', {
         console.error('Failed processing administrative users synchronization list request:', error)
         this.users = []
         this.pagination.total = 0
+        if (process.client) {
+          useToast().add({
+            title: 'Failed to load users',
+            description: 'Could not load the users list. Please refresh the page.',
+            color: 'error',
+          })
+        }
       } finally {
         this.loading = false
       }
     },
+    // Rethrows without its own toast — both callers (pages/users/index.vue
+    // and pages/users/[id].vue) already wrap this in their own try/catch
+    // and show a contextual toast there; adding one here too would double up.
     async sendContactReminder(userId: string) {
       try {
         const { $api } = useNuxtApp()
@@ -79,6 +89,15 @@ export const useUsersStore = defineStore('users', {
       } catch (error) {
         console.error(`Failed loading user detail for ID ${id}:`, error)
         this.selectedUser = null
+        // The primary caller (pages/users/[id].vue's top-level await on page
+        // load) has no catch of its own, so this is the only feedback point.
+        if (process.client) {
+          useToast().add({
+            title: 'Failed to load user',
+            description: 'Could not load this user. Please try again.',
+            color: 'error',
+          })
+        }
         throw error
       } finally {
         this.loading = false

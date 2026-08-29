@@ -574,6 +574,11 @@ const previewRecipients = async () => {
     recipientsTruncated.value = !!res.data?.truncated
   } catch (error) {
     console.error("Failed to fetch recipient preview:", error)
+    useToast().add({
+      title: 'Preview failed',
+      description: 'Could not estimate the recipient list. Please try again.',
+      color: 'error',
+    })
   } finally {
     previewLoading.value = false
   }
@@ -587,6 +592,11 @@ const sendCampaign = async () => {
     navigateTo('/marketing')
   } catch (error) {
     console.error("Failed to dispatch campaign:", error)
+    useToast().add({
+      title: 'Campaign not sent',
+      description: 'The campaign could not be dispatched. Please try again.',
+      color: 'error',
+    })
   } finally {
     sending.value = false
   }
@@ -599,6 +609,11 @@ const saveDraft = async () => {
     navigateTo('/marketing')
   } catch (error) {
     console.error("Failed to save draft:", error)
+    useToast().add({
+      title: 'Draft not saved',
+      description: 'The campaign draft could not be saved. Please try again.',
+      color: 'error',
+    })
   }
 }
 </script>

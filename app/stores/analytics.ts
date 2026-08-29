@@ -46,10 +46,19 @@ export const useAnalyticsStore = defineStore('analytics', {
         }
       } catch (error) {
         console.error('Failed processing analytics dashboard payload sync:', error)
+        if (process.client) {
+          useToast().add({
+            title: 'Failed to load dashboard',
+            description: 'Could not load the latest dashboard data. Please refresh the page.',
+            color: 'error',
+          })
+        }
       } finally {
         this.loading = false
       }
     },
+    // Manual "refresh map" click — low-stakes, and the previously loaded
+    // pins stay on screen if this fails, so a console log is enough here.
     async fetchActiveAlerts() {
       try {
         const { $api } = useNuxtApp()

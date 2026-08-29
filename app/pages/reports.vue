@@ -231,6 +231,11 @@ const loadReports = async () => {
     generatedReports.value = Array.isArray(data) ? data : (data?.results ?? [])
   } catch (error) {
     console.error('Failed to load generated reports:', error)
+    useToast().add({
+      title: 'Failed to load reports',
+      description: 'Could not load previously generated reports. Please refresh the page.',
+      color: 'error',
+    })
   }
 }
 
@@ -252,6 +257,11 @@ const generateReport = async (report: ReportType) => {
     }
   } catch (error) {
     console.error('Failed to generate report:', error)
+    useToast().add({
+      title: 'Report generation failed',
+      description: `Could not generate "${report.name}". Please try again.`,
+      color: 'error',
+    })
   } finally {
     generatingId.value = null
   }
@@ -274,6 +284,11 @@ const downloadReport = async (item: GeneratedReport) => {
     window.URL.revokeObjectURL(url)
   } catch (error) {
     console.error('Failed to download report:', error)
+    useToast().add({
+      title: 'Download failed',
+      description: `Could not download "${item.name}". Please try again.`,
+      color: 'error',
+    })
   } finally {
     downloadingId.value = null
   }
@@ -287,6 +302,11 @@ const deleteReport = async (item: GeneratedReport) => {
     generatedReports.value = generatedReports.value.filter(r => r.id !== item.id)
   } catch (error) {
     console.error('Failed to delete report:', error)
+    useToast().add({
+      title: 'Delete failed',
+      description: `Could not delete "${item.name}". Please try again.`,
+      color: 'error',
+    })
   } finally {
     deletingId.value = null
   }

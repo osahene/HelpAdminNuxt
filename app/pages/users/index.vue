@@ -212,9 +212,18 @@ const changePage = (newPage: number) => {
 const sendReminder = async (userId: string) => {
   try {
     await usersStore.sendContactReminder(userId)
-    // Add toast or success notification triggers here if available
+    useToast().add({
+      title: 'Reminder sent',
+      description: 'The contact reminder was sent successfully.',
+      color: 'success',
+    })
   } catch (error) {
     console.error(`Failed executing administrative notification task on id ${userId}:`, error)
+    useToast().add({
+      title: 'Reminder not sent',
+      description: 'Could not send the contact reminder. Please try again.',
+      color: 'error',
+    })
   }
 }
 
