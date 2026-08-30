@@ -306,8 +306,17 @@ const statusBadge = (s: string) =>
   `inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${statusConfig[s]?.pill ?? 'text-slate-600 bg-slate-100'}`
 const statusDot = (s: string) => statusConfig[s]?.dot ?? 'bg-slate-400'
 
-const openCampaignDetail = (campaign: any) => {
+const openCampaignDetail = async (campaign: any) => {
+  // The row only carries CampaignListSerializer's fields (no subject/body/
+  // image) — show it immediately, then fill in the message preview from the
+  // detail endpoint once it lands.
   selectedCampaign.value = campaign
+  try {
+    const response = await $api.campaignsId(campaign.id)
+    selectedCampaign.value = response.data
+  } catch (error) {
+    console.error('Error loading campaign detail:', error)
+  }
 }
 
 // Rewritten custom function to call $api.campaignsList()
