@@ -42,6 +42,8 @@ export default defineNuxtPlugin((nuxtApp) => {
     campaigns: (data: any, config?: any) => $axios.post("/trap_admin/campaigns/", data, config),
     campaignsList: (params?: any) => $axios.get("/trap_admin/campaigns/", { params }),
     campaignsId: (id: string) => $axios.get(`/trap_admin/campaigns/${id}/`),
+    campaignsResend: (id: string) => $axios.post(`/trap_admin/campaigns/${id}/resend/`),
+    campaignsExport: (id: string) => $axios.get(`/trap_admin/campaigns/${id}/export/`, { responseType: 'blob' }),
     campaignsPreview: (recipientType: string, filters?: Record<string, string>) =>
       $axios.get('/trap_admin/campaigns/preview/', { params: { recipientType, ...filters } }),
     campaignsLocationOptions: (level: string, parents?: Record<string, string>) =>

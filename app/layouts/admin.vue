@@ -52,15 +52,26 @@
           <SidebarLink to="/settings" icon="CogIcon">Settings</SidebarLink>
         </nav>
 
-        <!-- Live status indicator -->
-        <div class="px-4 py-3 mx-3 mb-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+        <!-- Live status indicator: reflects the actual admin realtime
+             WebSocket (AdminAlertConsumer), not a decorative always-on dot —
+             if this says offline, the alert feed elsewhere on screen is
+             stale. -->
+        <div
+          :class="[
+            'px-4 py-3 mx-3 mb-3 rounded-xl border',
+            isConnected ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-slate-500/10 border-slate-500/20'
+          ]"
+        >
           <div class="flex items-center gap-2">
             <span class="relative flex h-2 w-2">
               <span
+                v-if="isConnected"
                 class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span :class="['relative inline-flex rounded-full h-2 w-2', isConnected ? 'bg-emerald-500' : 'bg-slate-400']"></span>
             </span>
-            <span class="text-xs text-emerald-400 font-medium">System Online</span>
+            <span :class="['text-xs font-medium', isConnected ? 'text-emerald-400' : 'text-slate-400']">
+              {{ isConnected ? 'System Online' : 'Reconnecting…' }}
+            </span>
           </div>
         </div>
 
@@ -156,6 +167,7 @@ import AdminHeader from '~/components/admin/Header.vue'
 import { useAuthStore } from '~/stores/auth'
 import { useAuth } from '~/composables/useAuth'
 import { useDarkMode } from '~/composables/useDarkMode'
+import { useRealtimeStatus } from '~/composables/useRealtime'
 import { useAnalyticsStore } from '~/stores/analytics'
 
 
@@ -164,6 +176,7 @@ const { stats } = storeToRefs(analyticsStore)
 const sidebarOpen = ref(false)
 const { user } = useAuth()
 const { isDark } = useDarkMode()
+const { isConnected } = useRealtimeStatus()
 
 const userInitials = computed(() => {
   if (!user.value?.name) return 'A'

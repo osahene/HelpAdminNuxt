@@ -138,8 +138,8 @@ const notificationColumns = [
 
 const getInitials = (name?: string) => {
   if (!name) return '?'
-  const p = name.split(' ')
-  return p.length > 1 ? p[0][0] + p[1][0] : name.slice(0, 2).toUpperCase()
+  const parts = name.trim().split(/\s+/)
+  return parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : name.slice(0, 2).toUpperCase()
 }
 
 const statusConfig: Record<string, string> = {

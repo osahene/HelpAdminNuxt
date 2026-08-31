@@ -23,6 +23,7 @@ import type { Alert } from '~/types'
 
 const config = useRuntimeConfig()
 const MAPAPIKEY = config.public.mapAPI as string || ''
+const MAP_ID = config.public.googleMapsId as string || 'DEMO_MAP_ID'
 
 const props = defineProps<{
   alerts: Alert[]
@@ -37,8 +38,9 @@ const mapContainer = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
 let map: google.maps.Map | null = null
 let markerCluster: MarkerClusterer | null = null
-let markers: google.maps.Marker[] = []
+let markers: google.maps.marker.AdvancedMarkerElement[] = []
 let infoWindow: google.maps.InfoWindow | null = null
+let PinElementCtor: typeof google.maps.marker.PinElement | null = null
 
 // Initialize Google Maps
 const initMap = async () => {
@@ -46,17 +48,23 @@ const initMap = async () => {
 
   // 1. Configure the loader globally
   setOptions({
-    key: MAPAPIKEY, 
+    key: MAPAPIKEY,
     v: 'weekly',
   })
 
-  // 2. Import the required maps library
-  const { Map } = await importLibrary('maps')
+  // 2. Import the required maps libraries. 'marker' is what provides
+  // AdvancedMarkerElement/PinElement — google.maps.Marker is deprecated
+  // (still works, but gets no further bug fixes).
+  const [{ Map }, { PinElement }] = await Promise.all([
+    importLibrary('maps'),
+    importLibrary('marker'),
+  ])
+  PinElementCtor = PinElement
 
   map = new Map(mapContainer.value, {
     center: { lat: 5.556, lng: -0.196 }, // Accra coordinates
     zoom: 2,
-    mapId: 'DEMO_MAP_ID', 
+    mapId: MAP_ID,
     streetViewControl: false,
     mapTypeControl: false,
   })
@@ -68,12 +76,12 @@ const initMap = async () => {
 }
 
 const updateMarkers = () => {
-  if (!map) return
+  if (!map || !PinElementCtor) return
 
   if (markerCluster) {
     markerCluster.clearMarkers()
   } else {
-    markers.forEach(m => m.setMap(null))
+    markers.forEach(m => { m.map = null })
   }
   markers = []
 
@@ -83,31 +91,30 @@ const updateMarkers = () => {
 
   props.alerts.forEach(alert => {
     if (alert.location?.latitude && alert.location?.longitude) {
-      const position = { 
-        lat: alert.location.latitude, 
-        lng: alert.location.longitude 
+      const position = {
+        lat: alert.location.latitude,
+        lng: alert.location.longitude
       }
 
-      // Recreate your custom CSS dot using Google's native Vector shapes
-      const svgIcon = {
-        path: google.maps.SymbolPath.CIRCLE,
-        fillColor: getAlertColor(alert.type),
-        fillOpacity: 1,
-        strokeWeight: 2,
-        strokeColor: 'white',
-        scale: 6 // Represents the radius, giving you a ~12px dot
-      }
+      // Recreate the custom colored dot with a PinElement instead of the
+      // deprecated SymbolPath icon.
+      const pin = new PinElementCtor!({
+        background: getAlertColor(alert.type),
+        borderColor: 'white',
+        glyphColor: 'white',
+        scale: 0.8,
+      })
 
-      const marker = new google.maps.Marker({
+      const marker = new google.maps.marker.AdvancedMarkerElement({
         position,
-        icon: svgIcon,
-        title: alert.type
+        content: pin.element,
+        title: alert.type,
       })
 
       // Bind the click event and the InfoWindow popup
       marker.addListener('click', () => {
         emit('marker-click', alert)
-        
+
         const contentString = `
           <div style="color: black;">
             <b>${alert.type.toUpperCase()}</b><br>

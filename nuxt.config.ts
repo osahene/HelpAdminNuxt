@@ -45,6 +45,12 @@ export default defineNuxtConfig({
       // baseURL's local-dev default, just over ws:// instead of http://.
       wsBase: process.env.NUXT_PUBLIC_WS_BASE || 'ws://127.0.0.1:8000/ws',
       mapAPI: process.env.MAP_API_KEY || '',
+      // AdvancedMarkerElement requires a Map ID to render at all. 'DEMO_MAP_ID'
+      // is Google's own placeholder for trying it out — it works, but prints a
+      // console notice and isn't meant for production. Create a real Map ID in
+      // Cloud Console (tied to the same project as MAP_API_KEY) and set
+      // GOOGLE_MAPS_ID once one exists.
+      googleMapsId: process.env.GOOGLE_MAPS_ID || 'DEMO_MAP_ID',
     }
   },
 plugins: [

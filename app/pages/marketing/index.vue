@@ -212,13 +212,22 @@
                     </div>
 
                     <div class="px-5 py-4 border-t border-slate-100 dark:border-slate-700 flex gap-2">
-                      <button class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-all">
-                        <ArrowPathIcon class="h-3.5 w-3.5" />
-                        Resend Failed
+                      <button
+                        v-if="canResend"
+                        :disabled="resending"
+                        @click="resendCampaign"
+                        class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ArrowPathIcon class="h-3.5 w-3.5" :class="{ 'animate-spin': resending }" />
+                        {{ resending ? 'Resending…' : 'Resend Campaign' }}
                       </button>
-                      <button class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-all">
+                      <button
+                        :disabled="exporting"
+                        @click="exportCampaign"
+                        class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <ArrowDownTrayIcon class="h-3.5 w-3.5" />
-                        Export
+                        {{ exporting ? 'Exporting…' : 'Export' }}
                       </button>
                     </div>
 
@@ -247,6 +256,15 @@ const { $api } = useNuxtApp()
 const campaigns = ref<any[]>([])
 const loading = ref(false)
 const selectedCampaign = ref<any>(null)
+const resending = ref(false)
+const exporting = ref(false)
+
+// Resend re-runs the whole campaign on every channel it used, for every
+// current recipient — not a selective per-recipient retry (in_app/push/
+// email never tracked who individually failed, only aggregate counts, so
+// there's no way to target just the failures on those channels without
+// also re-notifying everyone else). Draft campaigns have nothing to resend.
+const canResend = computed(() => selectedCampaign.value?.status !== 'draft')
 
 // Support dynamic formatting with safe case key mapping fallback
 const columns = [
@@ -316,6 +334,61 @@ const openCampaignDetail = async (campaign: any) => {
     selectedCampaign.value = response.data
   } catch (error) {
     console.error('Error loading campaign detail:', error)
+  }
+}
+
+const resendCampaign = async () => {
+  if (!selectedCampaign.value) return
+  resending.value = true
+  try {
+    const response = await $api.campaignsResend(selectedCampaign.value.id)
+    selectedCampaign.value = response.data
+    // Reflect the now-"sending" status back in the list row too, without a
+    // full refetch.
+    const row = campaigns.value.find(c => c.id === selectedCampaign.value.id)
+    if (row) row.status = response.data.status
+    if (process.client) {
+      useToast().add({ title: 'Campaign resend started', color: 'success' })
+    }
+  } catch (error) {
+    console.error('Error resending campaign:', error)
+    if (process.client) {
+      useToast().add({
+        title: 'Failed to resend campaign',
+        description: 'Please try again.',
+        color: 'error',
+      })
+    }
+  } finally {
+    resending.value = false
+  }
+}
+
+const exportCampaign = async () => {
+  if (!selectedCampaign.value) return
+  exporting.value = true
+  try {
+    const response = await $api.campaignsExport(selectedCampaign.value.id)
+    const blob = new Blob([response.data], { type: response.headers['content-type'] || 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `campaign_${selectedCampaign.value.id}.csv`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Error exporting campaign:', error)
+    if (process.client) {
+      useToast().add({
+        title: 'Failed to export campaign',
+        description: 'Please try again.',
+        color: 'error',
+      })
+    }
+  } finally {
+    exporting.value = false
   }
 }
 
