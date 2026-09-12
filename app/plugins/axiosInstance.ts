@@ -35,7 +35,11 @@ const hideLoading = () => {
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig();
   const router = useRouter();
-  const baseURL = config.public.baseURL as string | undefined;
+  // Client-side: same-origin, through server/api/proxy/[...path].ts — the
+  // browser never sees the real backend host. Server-side (SSR): call the
+  // backend directly, since there's no point looping a request back through
+  // this same server's own HTTP proxy when it can just call out itself.
+  const baseURL = process.client ? '/api/proxy' : config.backendBaseURL;
 
   // Toasts are a client-only UI concept (nobody sees SSR output), and this
   // interceptor can fire for requests made during SSR data-fetching where
@@ -83,8 +87,14 @@ export default defineNuxtPlugin((nuxtApp) => {
 
      refreshRequest = (async () => {
     try {
+      // Relative to refreshClient's own baseURL — this used to manually
+      // re-prefix `baseURL` here too, which only ever worked because
+      // baseURL was previously always an absolute URL (axios ignores an
+      // instance's baseURL when the given url is already absolute). Now
+      // that baseURL is '/api/proxy' client-side, that same prefixing would
+      // double up into /api/proxy/api/proxy/... instead.
       const response = await refreshClient.post(
-        `${baseURL ?? ''}/trap_admin/token/refresh/`,
+        '/trap_admin/token/refresh/',
         { refresh: refreshToken }
       );
 
