@@ -46,11 +46,15 @@ export default defineNuxtConfig({
     // Keys within public are also exposed client-side
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3000/api',
-      // Base for the admin realtime WebSocket, without the trailing
-      // `/admin/` path — useRealtime.ts appends `admin/?token=...` itself,
-      // so this should NOT end in a slash. Mirrors the same host:port as
-      // baseURL's local-dev default, just over ws:// instead of http://.
-      wsBase: process.env.NUXT_PUBLIC_BASE_URL || 'ws://127.0.0.1:8000/ws',
+      // Base for the admin realtime WebSocket. useRealtime.ts appends
+      // `/admin/?token=...` itself, and the backend's actual route is
+      // ws/admin/ (realtime/routing.py) — so this must end in `/ws`, not
+      // just the bare origin. Appending it here, in code, means a
+      // NUXT_PUBLIC_BASE_URL that's just the bare wss://host (no /ws suffix)
+      // can't silently produce a broken URL the way it did before: that
+      // exact gap was why the browser got "No route found for path 'admin/'"
+      // from Channels — the request was missing its /ws prefix entirely.
+      wsBase: `${(process.env.NUXT_PUBLIC_BASE_URL || 'ws://127.0.0.1:8000').replace(/\/+$/, '')}/ws`,
       mapAPI: process.env.MAP_API_KEY || '',
       // AdvancedMarkerElement requires a Map ID to render at all. 'DEMO_MAP_ID'
       // is Google's own placeholder for trying it out — it works, but prints a
