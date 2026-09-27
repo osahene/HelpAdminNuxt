@@ -50,7 +50,7 @@ export default defineNuxtConfig({
       // `/admin/` path — useRealtime.ts appends `admin/?token=...` itself,
       // so this should NOT end in a slash. Mirrors the same host:port as
       // baseURL's local-dev default, just over ws:// instead of http://.
-      wsBase: process.env.NUXT_PUBLIC_WS_BASE || 'ws://127.0.0.1:8000/ws',
+      wsBase: process.env.NUXT_PUBLIC_BASE_URL || 'ws://127.0.0.1:8000/ws',
       mapAPI: process.env.MAP_API_KEY || '',
       // AdvancedMarkerElement requires a Map ID to render at all. 'DEMO_MAP_ID'
       // is Google's own placeholder for trying it out — it works, but prints a
