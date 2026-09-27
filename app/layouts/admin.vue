@@ -50,6 +50,7 @@
           </div>
 
           <SidebarLink to="/settings" icon="CogIcon">Settings</SidebarLink>
+          <SidebarLink to="/system-errors" icon="ExclamationTriangleIcon">System Errors</SidebarLink>
         </nav>
 
         <!-- Live status indicator: reflects the actual admin realtime

@@ -48,6 +48,8 @@ export default defineNuxtPlugin((nuxtApp) => {
       $axios.get('/trap_admin/campaigns/preview/', { params: { recipientType, ...filters } }),
     campaignsLocationOptions: (level: string, parents?: Record<string, string>) =>
       $axios.get('/trap_admin/campaigns/location-options/', { params: { level, ...parents } }),
+    systemErrors: (params?: any) => $axios.get("/trap_admin/system-errors/", { params }),
+    systemErrorsResolve: (id: string) => $axios.patch(`/trap_admin/system-errors/${id}/resolve/`),
     settings: () => $axios.get("/trap_admin/settings/"),
     settingsGeneral: (data: any) => $axios.put("/trap_admin/settings/general/", data),
     settingsTemplates: (data: any) => $axios.put("/trap_admin/settings/templates/", data),
