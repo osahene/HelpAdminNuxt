@@ -44,6 +44,7 @@
           <SidebarLink to="/analytics" icon="ChartBarIcon">Analytics</SidebarLink>
           <SidebarLink to="/reports" icon="DocumentTextIcon">Reports</SidebarLink>
           <SidebarLink to="/marketing" icon="MegaphoneIcon">Marketing</SidebarLink>
+          <SidebarLink to="/tutorials" icon="PlayCircleIcon">Video Tutorials</SidebarLink>
 
           <div class="px-2 pt-5 pb-2">
             <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">System</span>

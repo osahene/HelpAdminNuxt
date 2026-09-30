@@ -52,6 +52,14 @@ export default defineNuxtPlugin((nuxtApp) => {
       $axios.get('/trap_admin/campaigns/location-options/', { params: { level, ...parents } }),
     systemErrors: (params?: any) => $axios.get("/trap_admin/system-errors/", { params }),
     systemErrorsResolve: (id: string) => $axios.patch(`/trap_admin/system-errors/${id}/resolve/`),
+    tutorials: () => $axios.get("/trap_admin/tutorials/"),
+    tutorialsCreate: (data: FormData) => $axios.post("/trap_admin/tutorials/", data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+    tutorialsUpdate: (id: string, data: FormData) => $axios.patch(`/trap_admin/tutorials/${id}/`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+    tutorialsDelete: (id: string) => $axios.delete(`/trap_admin/tutorials/${id}/`),
     settings: () => $axios.get("/trap_admin/settings/"),
     settingsGeneral: (data: any) => $axios.put("/trap_admin/settings/general/", data),
     settingsTemplates: (data: any) => $axios.put("/trap_admin/settings/templates/", data),
