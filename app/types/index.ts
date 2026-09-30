@@ -6,6 +6,8 @@ id: string
   name: string            // Provided by get_full_name / serializer method field
   phone_number: string    // Mapped from backend model schema
   is_active: boolean
+  deletion_requested_at?: string | null
+  deletion_scheduled_for?: string | null
   role?: string
   created_at: string      // Mapped from backend models
   contact_count?: number

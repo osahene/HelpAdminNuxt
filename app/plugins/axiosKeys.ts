@@ -23,6 +23,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     usersIdContacts: (id: string) => $axios.get(`/trap_admin/users/${id}/contacts/`),
     usersIdAlerts: (id: string) => $axios.get(`/trap_admin/users/${id}/alerts/`),
     usersIdRemindContacts: (id: string) => $axios.post(`/trap_admin/users/${id}/remind-contacts/`),
+    usersIdStatus: (id: string, action: string) => $axios.patch(`/trap_admin/users/${id}/status/`, { action }),
     contacts: (data: any) => $axios.get("/trap_admin/contacts/", data),
     contactsId: (id: string) => $axios.get(`/trap_admin/contacts/${id}/`),
     contactNotifications: (id: string) => $axios.get(`/trap_admin/contacts/${id}/notifications/`),
@@ -43,6 +44,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     campaignsList: (params?: any) => $axios.get("/trap_admin/campaigns/", { params }),
     campaignsId: (id: string) => $axios.get(`/trap_admin/campaigns/${id}/`),
     campaignsResend: (id: string) => $axios.post(`/trap_admin/campaigns/${id}/resend/`),
+    campaignsDelete: (id: string) => $axios.delete(`/trap_admin/campaigns/${id}/`),
     campaignsExport: (id: string) => $axios.get(`/trap_admin/campaigns/${id}/export/`, { responseType: 'blob' }),
     campaignsPreview: (recipientType: string, filters?: Record<string, string>) =>
       $axios.get('/trap_admin/campaigns/preview/', { params: { recipientType, ...filters } }),

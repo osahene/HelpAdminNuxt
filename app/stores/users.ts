@@ -106,6 +106,24 @@ export const useUsersStore = defineStore('users', {
 
     clearSelectedUser() {
       this.selectedUser = null
+    },
+
+    // action is one of 'deactivate' | 'reactivate' | 'delete' | 'cancel_deletion'.
+    // "delete" schedules a purge DELETION_GRACE_DAYS out — it never deletes
+    // on the spot — see main_admin.views.UserStatusView.
+    async setUserStatus(userId: string, action: string) {
+      try {
+        const { $api } = useNuxtApp()
+        const response = await $api.usersIdStatus(userId, action)
+        const payload = response?.data || response
+        if (this.selectedUser && this.selectedUser.id === userId) {
+          this.selectedUser = payload
+        }
+        return payload
+      } catch (error) {
+        console.error(`Failed to set status '${action}' for user ${userId}:`, error)
+        throw error
+      }
     }
   }
 })

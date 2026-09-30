@@ -1,14 +1,63 @@
 <template>
   <div class="space-y-5">
 
-    <div class="flex items-center gap-3">
-      <button @click="navigateTo('/users')" class="p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all">
-        <ArrowLeftIcon class="h-4 w-4" />
-      </button>
-      <div>
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white">{{ user?.name || user?.full_name }}</h1>
-        <p class="text-xs text-slate-400 mt-0.5">User profile</p>
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <button @click="navigateTo('/users')" class="p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all">
+          <ArrowLeftIcon class="h-4 w-4" />
+        </button>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white">{{ user?.name || user?.full_name }}</h1>
+            <span :class="accountStatusBadge">{{ accountStatusLabel }}</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">User profile</p>
+        </div>
       </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          v-if="user?.deletion_requested_at"
+          :disabled="statusUpdating"
+          @click="runStatusAction('cancel_deletion', 'Cancel the scheduled deletion and reactivate this account?')"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all disabled:opacity-50"
+        >
+          Cancel Deletion
+        </button>
+        <template v-else>
+          <button
+            v-if="!user?.is_active"
+            :disabled="statusUpdating"
+            @click="runStatusAction('reactivate', 'Reactivate this account?')"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+          >
+            Reactivate
+          </button>
+          <button
+            v-else
+            :disabled="statusUpdating"
+            @click="runStatusAction('deactivate', 'Deactivate this account? They will be logged out immediately and unable to log back in until an admin reactivates them.')"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+          >
+            Deactivate
+          </button>
+        </template>
+        <button
+          v-if="!user?.deletion_requested_at"
+          :disabled="statusUpdating"
+          @click="runStatusAction('delete', 'Delete this account? It will be deactivated immediately and permanently removed — including their alert/dispatch history — in 30 days unless an admin cancels it first.')"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all disabled:opacity-50"
+        >
+          <TrashIcon class="h-3.5 w-3.5" /> Delete
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="user?.deletion_requested_at"
+      class="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200/80 dark:border-red-500/20 text-sm text-red-700 dark:text-red-300"
+    >
+      Scheduled for permanent deletion on {{ formatDate(user.deletion_scheduled_for) }} — this removes their alert/dispatch history too. Use "Cancel Deletion" above to stop it.
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -155,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon, BellAlertIcon } from '@heroicons/vue/24/outline'
+import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon, BellAlertIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
 import { storeToRefs } from 'pinia'
 import { useUsersStore } from '~/stores/users'
@@ -184,6 +233,38 @@ onUnmounted(() => usersStore.clearSelectedUser())
 const approvedContactsCount = computed(() =>
   contacts.value.filter((c: any) => c.status === 'approved').length
 )
+
+const statusUpdating = ref(false)
+
+const accountStatusLabel = computed(() => {
+  if (user.value?.deletion_requested_at) return 'Pending Deletion'
+  return user.value?.is_active ? 'Active' : 'Deactivated'
+})
+
+const accountStatusBadge = computed(() => {
+  const base = 'inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-full'
+  if (user.value?.deletion_requested_at) return `${base} text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10`
+  return user.value?.is_active
+    ? `${base} text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10`
+    : `${base} text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-700`
+})
+
+const runStatusAction = async (action: string, confirmMessage: string) => {
+  if (!confirm(confirmMessage)) return
+  statusUpdating.value = true
+  try {
+    await usersStore.setUserStatus(userId, action)
+  } catch (err) {
+    console.error(`Failed to update account status ('${action}'):`, err)
+    useToast().add({
+      title: 'Action failed',
+      description: 'Could not update this account’s status. Please try again.',
+      color: 'error',
+    })
+  } finally {
+    statusUpdating.value = false
+  }
+}
 
 const coverageColor = computed(() => {
   const c = approvedContactsCount.value
