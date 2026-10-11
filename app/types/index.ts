@@ -13,6 +13,13 @@ id: string
   contact_count?: number
   contacts?: Contact[]
   alerts?: Alert[]
+  // Why the user last deactivated/deleted their own account (detail view only).
+  closure_feedback?: {
+    action: 'deactivate' | 'delete'
+    reason: string
+    details: string
+    created_at: string
+  } | null
 }
 
 export interface DashboardStats {
@@ -56,6 +63,9 @@ export interface Contact {
  userId: string
   user?: { name: string }
   createdAt: string
+  relation?: string
+  // Alert types this contact is notified for — see utils/situations.ts.
+  situations?: string[]
 }
 
 export interface AlertContactDetail {

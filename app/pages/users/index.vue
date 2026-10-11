@@ -4,7 +4,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-xl font-bold text-slate-900 dark:text-white">Users</h1>
-        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">All registered app users</p>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">All registered app users, including deactivated and pending-deletion accounts</p>
       </div>
       <button 
         @click="exportUsers"
@@ -16,13 +16,13 @@
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div class="relative sm:col-span-2">
           <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <input
             v-model="filters.search"
             type="text"
-            placeholder="Search by name, email or phone…"
+            placeholder="Full phone number, email, or first/last name…"
             class="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-all"
             @keyup.enter="applyFilters"
           />
@@ -35,6 +35,15 @@
           <option value="full">Full (5/5)</option>
           <option value="partial">Partial (1–4)</option>
           <option value="none">No contacts (0)</option>
+        </select>
+        <select
+          v-model="filters.accountStatus"
+          class="py-2 px-3 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
+        >
+          <option value="">All Accounts</option>
+          <option value="active">Active</option>
+          <option value="deactivated">Deactivated</option>
+          <option value="pending_deletion">Pending Deletion</option>
         </select>
         <button 
           @click="applyFilters" 
@@ -91,6 +100,10 @@
               {{ row.approved_contact_count ?? row.approvedContactCount ?? 0 }}/5
             </span>
           </div>
+        </template>
+
+        <template #cell-account_status="{ row }">
+          <span :class="accountStatusBadge(row)">{{ accountStatusLabel(row) }}</span>
         </template>
 
         <template #cell-actions="{ row }">
@@ -158,8 +171,20 @@ const { users, loading, pagination } = storeToRefs(usersStore)
 // 2. Local filter layout state stays local to the component UI context
 const filters = reactive({ 
   search: '', 
-  coverageStatus: '' 
+  coverageStatus: '',
+  accountStatus: '',
 })
+
+// Same wording as the user detail page's status badge.
+const accountStatusLabel = (row: any) =>
+  row.deletion_requested_at ? 'Pending Deletion' : row.is_active ? 'Active' : 'Deactivated'
+const accountStatusBadge = (row: any) => {
+  const base = 'inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap'
+  if (row.deletion_requested_at) return `${base} text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10`
+  return row.is_active
+    ? `${base} text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10`
+    : `${base} text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10`
+}
 
 // Column configurations maps key metrics with case fallbacks included
 const columns = [
@@ -167,6 +192,7 @@ const columns = [
   { key: 'phone', label: 'Phone' },
   { key: 'contactCount', label: 'Contact Coverage' },
   { key: 'alert_count', label: 'Alerts', format: (v: number) => v ?? '0' },
+  { key: 'account_status', label: 'Status' },
   { key: 'created_at', label: 'Registered', format: (v: string) => v ? new Date(v).toLocaleDateString() : '—' },
   { key: 'actions', label: '' },
 ]
@@ -194,6 +220,7 @@ const loadUsers = async () => {
   const apiParams = {
     search: filters.search || undefined,
     coverage_status: filters.coverageStatus || undefined,
+    account_status: filters.accountStatus || undefined,
   }
   await usersStore.fetchUsers(apiParams)
 }

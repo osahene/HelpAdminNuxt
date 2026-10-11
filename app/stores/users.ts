@@ -27,7 +27,10 @@ export const useUsersStore = defineStore('users', {
         // Bind core active pagination filters into the parameters object payload
         const queryParams = {
           ...filters,
-          page: this.pagination.currentPage
+          page: this.pagination.currentPage,
+          // Must match perPage: the backend pages by this, and totalPages is
+          // computed from the TOTAL `count` it returns.
+          page_size: this.pagination.perPage
         }
 
         // Axios cleanly unwraps HTTP payloads directly on response.data

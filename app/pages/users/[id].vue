@@ -60,6 +60,17 @@
       Scheduled for permanent deletion on {{ formatDate(user.deletion_scheduled_for) }} — this removes their alert/dispatch history too. Use "Cancel Deletion" above to stop it.
     </div>
 
+    <div
+      v-if="!user?.is_active && user?.closure_feedback"
+      class="px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200/80 dark:border-amber-500/20 text-sm text-amber-800 dark:text-amber-200"
+    >
+      <span class="font-semibold">
+        Reason given for {{ user.closure_feedback.action === 'delete' ? 'deleting' : 'deactivating' }}
+        ({{ formatDate(user.closure_feedback.created_at) }}):
+      </span>
+      {{ closureReasonLabel(user.closure_feedback.reason) }}<template v-if="user.closure_feedback.details"> — “{{ user.closure_feedback.details }}”</template>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-6">
         <div class="flex items-start gap-5">
@@ -317,6 +328,22 @@ const alertStatusBadge = (s: string) => {
 }
 
 const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString() : '—'
+
+// Reason keys sent by the app (profile_screen.dart) and web (AccountSettings.jsx).
+const CLOSURE_REASONS: Record<string, string> = {
+  break: 'Needs a break, will come back later',
+  notifications: 'Too many notifications',
+  new_phone: 'Changing phone or phone number',
+  privacy_location: 'Not comfortable sharing location right now',
+  not_working: "App isn't working properly for them",
+  no_longer_needed: 'No longer needs an emergency alert app',
+  data_privacy: 'Worried about how their personal data is used',
+  found_alternative: 'Found another app that works better',
+  contacts_unresponsive: "Emergency contacts don't use it or respond",
+  delivery_problems: "Alerts or login codes didn't reach them or their contacts",
+  other: 'Other',
+}
+const closureReasonLabel = (key: string) => CLOSURE_REASONS[key] ?? key
 
 // Action dispatch methods bound precisely to apiService schemas
 const sendContactReminder = async () => {

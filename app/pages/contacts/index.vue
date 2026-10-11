@@ -79,6 +79,13 @@
           <span>{{ row.country_code }}{{ row.phone_number }}</span>
         </template>
 
+        <template #cell-situations="{ row }">
+          <div v-if="situationBadges(row.situations).length" class="flex flex-wrap gap-1 max-w-xs">
+            <span v-for="s in situationBadges(row.situations)" :key="s.key" :class="s.class">{{ s.label }}</span>
+          </div>
+          <span v-else class="text-xs text-slate-400">—</span>
+        </template>
+
         <template #cell-status="{ row }">
           <span :class="statusBadge(row.status)">
             <span :class="statusDot(row.status)" class="inline-block h-1.5 w-1.5 rounded-full mr-1.5"></span>
@@ -86,7 +93,7 @@
           </span>
         </template>
 
-        <template #cell-isUser="{ row }">
+        <template #cell-is_user="{ row }">
           <span v-if="row.is_user" class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
             <CheckCircleIcon class="h-3.5 w-3.5" /> Yes
           </span>
@@ -148,6 +155,7 @@ import {
 import DataTable from '~/components/admin/DataTable.vue'
 import type { Contact } from '~/types'
 import { useContactsStore } from '~/stores/contacts'
+import { situationBadges } from '~/utils/situations'
 
 definePageMeta({ layout: 'admin' })
 
@@ -163,6 +171,7 @@ const columns = [
   { key: 'name', label: 'Name' },
   { key: 'phone', label: 'Phone' },
   { key: 'relation', label: 'Relationship' },
+  { key: 'situations', label: 'Situations' },
   { key: 'status', label: 'Status' },
   { key: 'is_user', label: 'Registered' },
   { key: 'added_by.name', label: 'Added By' },

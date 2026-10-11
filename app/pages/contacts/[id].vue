@@ -52,6 +52,19 @@
             <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Added On</dt>
             <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ contact?.created_at ? formatDate(contact.created_at) : '—' }}</dd>
           </div>
+          <div>
+            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Relationship</dt>
+            <dd class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200 capitalize">{{ contact?.relation || '—' }}</dd>
+          </div>
+          <div class="sm:col-span-2 lg:col-span-3">
+            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Situations</dt>
+            <dd class="mt-1.5">
+              <div v-if="situations.length" class="flex flex-wrap gap-1.5">
+                <span v-for="s in situations" :key="s.key" :class="s.class">{{ s.label }}</span>
+              </div>
+              <span v-else class="text-sm text-slate-400">None selected</span>
+            </dd>
+          </div>
         </div>
       </div>
 
@@ -99,6 +112,7 @@ import DataTable from '~/components/admin/DataTable.vue'
 import type { Contact } from '~/types'
 import { storeToRefs } from 'pinia'
 import { useContactsStore } from '~/stores/contacts'
+import { situationBadges } from '~/utils/situations'
 definePageMeta({ layout: 'admin' })
 
 const { $api } = useNuxtApp()
@@ -108,6 +122,8 @@ const { selectedContact: contact, loading } = storeToRefs(contactsStore)
 
 const route = useRoute()
 const contactId = route.params.id as string
+
+const situations = computed(() => situationBadges(contact.value?.situations))
 
 const notifications = ref<any[]>([])
 const loadingNotifications = ref(false)

@@ -23,7 +23,10 @@ export const useContactsStore = defineStore('contacts', {
         // Prepare clean API query params matching backend Django expectations
         const queryParams = {
           ...filters,
-          page: this.pagination.currentPage
+          page: this.pagination.currentPage,
+          // Must match perPage: the backend pages by this, and totalPages is
+          // computed from the TOTAL `count` it returns.
+          page_size: this.pagination.perPage
         }
 
         // Axios directly unwraps the network packet payload structure under response.data
