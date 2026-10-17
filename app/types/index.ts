@@ -8,6 +8,8 @@ id: string
   is_active: boolean
   deletion_requested_at?: string | null
   deletion_scheduled_for?: string | null
+  // How far through the 3 sign-up steps they are (red / yellow / green).
+  registration_status?: 'phone_unverified' | 'fingerprint_pending' | 'complete'
   role?: string
   created_at: string      // Mapped from backend models
   contact_count?: number

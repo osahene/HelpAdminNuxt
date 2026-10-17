@@ -16,7 +16,7 @@
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <div class="relative sm:col-span-2">
           <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <input
@@ -44,6 +44,13 @@
           <option value="active">Active</option>
           <option value="deactivated">Deactivated</option>
           <option value="pending_deletion">Pending Deletion</option>
+        </select>
+        <select
+          v-model="filters.registrationStatus"
+          class="py-2 px-3 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400"
+        >
+          <option value="">All Registrations</option>
+          <option v-for="(meta, key) in REGISTRATION" :key="key" :value="key">{{ meta.label }}</option>
         </select>
         <button 
           @click="applyFilters" 
@@ -100,6 +107,18 @@
               {{ row.approved_contact_count ?? row.approvedContactCount ?? 0 }}/5
             </span>
           </div>
+        </template>
+
+        <template #cell-registration_status="{ row }">
+          <span
+            v-if="registrationMeta(row)"
+            :class="['inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold rounded-full whitespace-nowrap', registrationMeta(row)!.badge]"
+            :title="registrationMeta(row)!.hint"
+          >
+            <span :class="['h-2 w-2 rounded-full', registrationMeta(row)!.dot]"></span>
+            {{ registrationMeta(row)!.label }}
+          </span>
+          <span v-else class="text-xs text-slate-400">—</span>
         </template>
 
         <template #cell-account_status="{ row }">
@@ -173,7 +192,32 @@ const filters = reactive({
   search: '', 
   coverageStatus: '',
   accountStatus: '',
+  registrationStatus: '',
 })
+
+// The 3 sign-up steps (EmergencySystem/account/enrollment.py):
+// details -> phone OTP -> fingerprint (app) / passkey (web).
+const REGISTRATION: Record<string, { label: string, hint: string, badge: string, dot: string }> = {
+  phone_unverified: {
+    label: 'Phone not verified',
+    hint: 'Gave their details but never entered the OTP sent to their phone.',
+    badge: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10',
+    dot: 'bg-red-500',
+  },
+  fingerprint_pending: {
+    label: 'Fingerprint pending',
+    hint: 'Phone verified, but no fingerprint (app) or passkey (web) set up yet.',
+    badge: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10',
+    dot: 'bg-amber-400',
+  },
+  complete: {
+    label: 'Complete',
+    hint: 'Phone verified and fingerprint/passkey set up.',
+    badge: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10',
+    dot: 'bg-emerald-500',
+  },
+}
+const registrationMeta = (row: any) => REGISTRATION[row.registration_status]
 
 // Same wording as the user detail page's status badge.
 const accountStatusLabel = (row: any) =>
@@ -192,6 +236,7 @@ const columns = [
   { key: 'phone', label: 'Phone' },
   { key: 'contactCount', label: 'Contact Coverage' },
   { key: 'alert_count', label: 'Alerts', format: (v: number) => v ?? '0' },
+  { key: 'registration_status', label: 'Registration' },
   { key: 'account_status', label: 'Status' },
   { key: 'created_at', label: 'Registered', format: (v: string) => v ? new Date(v).toLocaleDateString() : '—' },
   { key: 'actions', label: '' },
@@ -221,6 +266,7 @@ const loadUsers = async () => {
     search: filters.search || undefined,
     coverage_status: filters.coverageStatus || undefined,
     account_status: filters.accountStatus || undefined,
+    registration_status: filters.registrationStatus || undefined,
   }
   await usersStore.fetchUsers(apiParams)
 }
