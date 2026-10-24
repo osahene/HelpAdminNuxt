@@ -18,40 +18,22 @@
           </div>
         </div>
 
-        <!-- Nav label -->
-        <div class="px-5 pt-6 pb-2">
-          <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">Main Menu</span>
-        </div>
-
-        <!-- Navigation -->
-        <nav class="flex-1 px-3 pb-4 space-y-0.5 overflow-y-auto">
-          <SidebarLink to="/dashboard" icon="HomeIcon">Dashboard</SidebarLink>
-          <SidebarLink to="/users" icon="UsersIcon">Users</SidebarLink>
-          <SidebarLink to="/contacts" icon="PhoneIcon">Contacts</SidebarLink>
-          <SidebarLink to="/alerts" icon="BellAlertIcon">
-            Alerts
-            <template #badge>
-              <span
-                class="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white">{{
-                  stats.activeAlerts }}</span>
-            </template>
-          </SidebarLink>
-
-          <div class="px-2 pt-5 pb-2">
-            <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">Insights</span>
-          </div>
-
-          <SidebarLink to="/analytics" icon="ChartBarIcon">Analytics</SidebarLink>
-          <SidebarLink to="/reports" icon="DocumentTextIcon">Reports</SidebarLink>
-          <SidebarLink to="/marketing" icon="MegaphoneIcon">Marketing</SidebarLink>
-          <SidebarLink to="/tutorials" icon="PlayCircleIcon">Video Tutorials</SidebarLink>
-
-          <div class="px-2 pt-5 pb-2">
-            <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">System</span>
-          </div>
-
-          <SidebarLink to="/settings" icon="CogIcon">Settings</SidebarLink>
-          <SidebarLink to="/system-errors" icon="ExclamationTriangleIcon">System Errors</SidebarLink>
+        <!-- Navigation: only the pages this staff member's role includes
+             (utils/portalSections.ts; the backend enforces the same). -->
+        <nav class="flex-1 px-3 pt-4 pb-4 space-y-0.5 overflow-y-auto">
+          <template v-for="group in navGroups" :key="group.name">
+            <div class="px-2 pt-2 pb-2 first:pt-0">
+              <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">{{ group.name }}</span>
+            </div>
+            <SidebarLink v-for="page in group.pages" :key="page.to" :to="page.to" :icon="page.icon">
+              {{ page.label }}
+              <template v-if="page.section === 'alerts'" #badge>
+                <span
+                  class="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white">{{
+                    stats.activeAlerts }}</span>
+              </template>
+            </SidebarLink>
+          </template>
         </nav>
 
         <!-- Live status indicator: reflects the actual admin realtime
@@ -87,6 +69,7 @@
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-slate-200 truncate">{{ user?.name || 'Admin User' }}</p>
               <p class="text-[11px] text-slate-500 truncate">{{ user?.email || 'admin@helpoohelp.com' }}</p>
+              <p v-if="user?.role_display" class="text-[10px] text-sky-400 font-semibold uppercase tracking-wider mt-0.5">{{ user.role_display }}</p>
             </div>
             <button @click="logout" title="Logout"
               class="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-500/10">
@@ -131,14 +114,9 @@
             </div>
 
             <nav class="flex-1 px-3 pt-4 pb-4 space-y-0.5 overflow-y-auto">
-              <SidebarLink to="/dashboard" icon="HomeIcon">Dashboard</SidebarLink>
-              <SidebarLink to="/users" icon="UsersIcon">Users</SidebarLink>
-              <SidebarLink to="/contacts" icon="PhoneIcon">Contacts</SidebarLink>
-              <SidebarLink to="/alerts" icon="BellAlertIcon">Alerts</SidebarLink>
-              <SidebarLink to="/analytics" icon="ChartBarIcon">Analytics</SidebarLink>
-              <SidebarLink to="/reports" icon="DocumentTextIcon">Reports</SidebarLink>
-              <SidebarLink to="/marketing" icon="MegaphoneIcon">Marketing</SidebarLink>
-              <SidebarLink to="/settings" icon="CogIcon">Settings</SidebarLink>
+              <SidebarLink v-for="page in visiblePages" :key="page.to" :to="page.to" :icon="page.icon">
+                {{ page.label }}
+              </SidebarLink>
             </nav>
           </div>
         </TransitionChild>
@@ -171,6 +149,7 @@ import { useAuth } from '~/composables/useAuth'
 import { useDarkMode } from '~/composables/useDarkMode'
 import { useRealtimeStatus } from '~/composables/useRealtime'
 import { useAnalyticsStore } from '~/stores/analytics'
+import { PORTAL_PAGES } from '~/utils/portalSections'
 
 
 const analyticsStore = useAnalyticsStore()
@@ -179,6 +158,20 @@ const sidebarOpen = ref(false)
 const { user } = useAuth()
 const { isDark } = useDarkMode()
 const { isConnected } = useRealtimeStatus()
+
+// The menu: only this role's pages (an administrator sees Dashboard, Alerts,
+// Users, Contacts and Messages — see utils/portalSections.ts).
+const authStore = useAuthStore()
+const visiblePages = computed(() => PORTAL_PAGES.filter(p => authStore.can(p.section)))
+const navGroups = computed(() => {
+  const groups: { name: string; pages: typeof PORTAL_PAGES }[] = []
+  for (const page of visiblePages.value) {
+    let group = groups.find(g => g.name === page.group)
+    if (!group) groups.push(group = { name: page.group, pages: [] })
+    group.pages.push(page)
+  }
+  return groups
+})
 
 const userInitials = computed(() => {
   if (!user.value?.name) return 'A'

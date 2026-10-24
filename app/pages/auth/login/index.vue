@@ -86,13 +86,11 @@
       </div>
     </div>
 
-    <NuxtLink
-      to="/auth/register"
-      class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-sm font-medium border border-white/10 text-slate-300 hover:bg-white/5 hover:border-white/20 transition-all"
-    >
-      <UserPlusIcon class="h-4 w-4" />
-      Create an account
-    </NuxtLink>
+    <!-- No self sign-up: the super admin adds staff from the Team page. -->
+    <p class="flex items-center justify-center gap-2 text-center text-sm text-slate-400">
+      <UserPlusIcon class="h-4 w-4 shrink-0" />
+      Accounts are created by your super admin. Check your email for an invitation.
+    </p>
   </div>
 </template>
 
@@ -127,9 +125,11 @@ const handleLogin = async () => {
       password: form.password,
       remember: form.remember,
     })
-    // Route guard will redirect to the originally requested page or dashboard
+    // Back to the page they asked for, or their own first page — an
+    // administrator's work starts somewhere else than an analyst's. The
+    // route guard turns anything outside their role into the same.
     const redirect = useRoute().query.redirect as string
-    navigateTo(redirect || '/dashboard')
+    navigateTo(redirect || authStore.homePath)
   } catch (err: any) {
     // AdminLoginSerializer raises all validation failures (bad credentials,
     // unverified email, not-yet-authorised) as HTTP 400 with the reason

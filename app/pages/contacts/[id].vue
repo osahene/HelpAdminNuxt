@@ -12,7 +12,25 @@
       <span v-if="contact?.status" :class="statusBadge(contact.status)" class="ml-2">
         {{ contact.status }}
       </span>
+      <div class="ml-auto">
+        <button
+          v-if="authStore.can('messages') && contact?.phone_number"
+          @click="messageOpen = true"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-sky-500 hover:bg-sky-600 text-white shadow-sm transition-all"
+        >
+          <ChatBubbleLeftRightIcon class="h-3.5 w-3.5" /> Send message
+        </button>
+      </div>
     </div>
+
+    <SendMessageModal
+      :open="messageOpen"
+      recipient-type="single_contact"
+      :recipient-id="contactId"
+      :recipient-name="contact?.name || 'this contact'"
+      :has-app="!!contact?.is_user"
+      @close="messageOpen = false"
+    />
 
     <!-- Profile card -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-sm p-6">
@@ -107,8 +125,10 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowLeftIcon, CheckCircleIcon, EnvelopeIcon, ArrowPathIcon, BellIcon } from '@heroicons/vue/24/outline'
+import { ArrowLeftIcon, CheckCircleIcon, EnvelopeIcon, ArrowPathIcon, BellIcon, ChatBubbleLeftRightIcon } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
+import SendMessageModal from '~/components/admin/SendMessageModal.vue'
+import { useAuthStore } from '~/stores/auth'
 import type { Contact } from '~/types'
 import { storeToRefs } from 'pinia'
 import { useContactsStore } from '~/stores/contacts'
@@ -119,6 +139,9 @@ const { $api } = useNuxtApp()
 
 const contactsStore = useContactsStore()
 const { selectedContact: contact, loading } = storeToRefs(contactsStore)
+
+const authStore = useAuthStore()
+const messageOpen = ref(false)
 
 const route = useRoute()
 const contactId = route.params.id as string

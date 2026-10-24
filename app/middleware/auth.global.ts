@@ -1,26 +1,15 @@
 import { useAuthStore } from '~/stores/auth'
+import { sectionForPath } from '~/utils/portalSections'
 
-// Routes that do NOT require authentication
+// Routes that do NOT require authentication. There is no sign-up page: the
+// super admin adds staff on the Team page and they set their password from
+// the emailed invitation (/auth/setPassword).
 const PUBLIC_ROUTES = [
   '/auth/login',
-  '/auth/register',
-  '/auth/verifyEmail',
-  '/auth/authPin',
+  '/auth/setPassword',
   '/auth/forgotPassword',
   '/auth/resetPassword',
 ]
-
-// Role-based access map: route prefix → allowed roles
-const ROLE_RESTRICTIONS: Record<string, string[]> = {
-  '/dashboard':  ['super_admin', 'admin'],
-  '/users':  ['super_admin', 'admin'],
-  '/contacts':  ['super_admin', 'admin'],
-  '/alerts':  ['super_admin', 'admin'],
-  '/settings':  ['super_admin', 'admin'],
-  '/marketing': ['super_admin', 'admin'],
-  '/reports':   ['super_admin', 'admin', 'analyst'],
-  '/analytics': ['super_admin', 'admin', 'analyst'],
-}
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const authStore = useAuthStore()
@@ -37,7 +26,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   const isAuthenticated = authStore.isAuthenticated
-  const userRole = authStore.user?.role as string | undefined
 
   // ── 2. Determine if the target route is public ───────────────────────────────
   const isPublicRoute = PUBLIC_ROUTES.some(
@@ -46,7 +34,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // ── 3. Authenticated user trying to access auth pages ───────────────────────
   if (isAuthenticated && isPublicRoute) {
-    return navigateTo('/dashboard', { replace: true })
+    return navigateTo(authStore.homePath, { replace: true })
   }
 
   // ── 4. Unauthenticated user trying to access a protected route ───────────────
@@ -57,16 +45,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
     )
   }
 
-  // ── 5. Role-based access control ────────────────────────────────────────────
-  if (isAuthenticated && userRole) {
-    for (const [prefix, allowedRoles] of Object.entries(ROLE_RESTRICTIONS)) {
-      if (to.path.startsWith(prefix) && !allowedRoles.includes(userRole)) {
-        // Use a Nuxt error or redirect to dashboard with query flag for toast
-        return navigateTo(
-          { path: '/dashboard', query: { error: '403' } },
-          { replace: true }
-        )
-      }
+  // ── 5. Role-based access: only the sections this role was given ─────────────
+  // (the backend enforces the same list on every API call — this just keeps
+  // people on pages that will actually work for them).
+  if (isAuthenticated && authStore.user && !isPublicRoute) {
+    if (to.path === '/') return navigateTo(authStore.homePath, { replace: true })
+    const section = sectionForPath(to.path)
+    if (section && !authStore.can(section)) {
+      return navigateTo(authStore.homePath, { replace: true })
     }
   }
 

@@ -1,5 +1,6 @@
 // stores/auth.ts
 import { defineStore } from 'pinia'
+import { PORTAL_PAGES, type Section } from '~/utils/portalSections'
 
 // Maps cleanly against fields transmitted by AdminUserSerializer
 interface User {
@@ -9,6 +10,10 @@ interface User {
   last_name: string
   name: string
   role: 'super_admin' | 'admin' | 'moderator' | 'analyst'
+  role_display: string
+  // The portal sections this role can open (backend main_admin/roles.py).
+  sections: Section[]
+  can_delete_users: boolean
   email_verified: boolean
   authorised: boolean
   created_at: string
@@ -33,50 +38,17 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: (state) => !!state.token,
-    isAdmin: (state) => state.user?.role === 'admin' || state.user?.role === 'super_admin'
+    isAdmin: (state) => state.user?.role === 'admin' || state.user?.role === 'super_admin',
+    isSuperAdmin: (state) => state.user?.role === 'super_admin',
+    /** Whether this staff member's role includes a portal section. */
+    can: (state) => (section: Section) => !!state.user?.sections?.includes(section),
+    /** Where to land after login / when a page isn't theirs: their first section. */
+    homePath: (state) =>
+      PORTAL_PAGES.find(p => state.user?.sections?.includes(p.section))?.to ?? '/auth/login',
   },
 
   actions: {
-    // ── Registration Flow ───────────────────────────────────────────────────
-    async register(payload: {
-      first_name: string
-      last_name: string
-      role: string
-      email: string
-      password: string
-      confirm_password: string
-    }) {
-      const { $api } = useNuxtApp()
-      const response = await $api.register(payload)
-      return response?.data || response
-    },
-
-    // ── Verification Subsystem ──────────────────────────────────────────────
-    async verifyEmail(payload: { email: string; code: string }) {
-      const { $api } = useNuxtApp()
-      const response = await $api.verifyEmail(payload)
-      return response?.data || response
-    },
-
-    async resendEmailVerification(email: string) {
-      const { $api } = useNuxtApp()
-      // Maps to /trap_admin/resend-pin/ via request data parsing
-      const response = await $api.resendPin({ email })
-      return response?.data || response
-    },
-
-    // ── Security Authorization Verification ───────────────────────────────
-    async verifyAuthPin(payload: { email: string; pin: string }) {
-      const { $api } = useNuxtApp()
-      const response = await $api.verifyPin(payload)
-      return response?.data || response
-    },
-
-    async resendAuthPin(email: string) {
-      const { $api } = useNuxtApp()
-      const response = await $api.resendPin({ email })
-      return response?.data || response
-    },
+    // No self-registration: the super admin adds staff on the Team page.
 
     // ── Active Core Login Routine ──────────────────────────────────────────
     async login(credentials: { email: string; password: string; remember?: boolean }) {

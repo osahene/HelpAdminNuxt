@@ -26,6 +26,8 @@ id: string
 
 export interface DashboardStats {
   activeAlerts: number
+  // Active alerts where no contact has said "I'm on my way" yet.
+  needsAttention: number
   avgResponseTime: number
   totalUsers: number
   avgContactsPerUser: number
@@ -68,6 +70,17 @@ export interface Contact {
   relation?: string
   // Alert types this contact is notified for — see utils/situations.ts.
   situations?: string[]
+  // As the API actually sends them (main_admin ContactListSerializer /
+  // ContactDetailSerializer).
+  first_name?: string
+  last_name?: string
+  phone_number?: string
+  country_code?: string
+  email_address?: string | null
+  is_user?: boolean
+  contact_user?: string | null
+  added_by?: { id: string; name: string } | null
+  created_at?: string
 }
 
 export interface AlertContactDetail {

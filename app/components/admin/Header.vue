@@ -88,7 +88,7 @@
                 <p class="text-sm font-semibold text-slate-800 dark:text-white truncate mt-0.5">{{ user?.email || 'admin@teenbytetechlab.com' }}</p>
               </div>
 
-              <MenuItem v-slot="{ active }">
+              <MenuItem v-if="authStore.can('settings')" v-slot="{ active }">
                 <NuxtLink
                   to="/settings"
                   :class="['flex items-center gap-2.5 px-4 py-2 text-sm transition-colors mt-1', active ? 'text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-700' : 'text-slate-600 dark:text-slate-300']"
@@ -138,6 +138,10 @@ import {
 import { useAuth } from '~/composables/useAuth'
 import { useDarkMode } from '~/composables/useDarkMode'
 import { useAnalyticsStore } from '~/stores/analytics'
+import { useAuthStore } from '~/stores/auth'
+
+// Settings is the super admin's (backend main_admin/roles.py).
+const authStore = useAuthStore()
 
 const analyticsStore = useAnalyticsStore()
 const { stats } = storeToRefs(analyticsStore)

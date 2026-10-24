@@ -69,6 +69,7 @@
           class="py-2 px-3 text-sm bg-slate-50 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600/60 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-400 transition-all"
         >
           <option value="">All Statuses</option>
+          <option value="needs_attention">Needs attention — nobody on the way</option>
           <option value="active">Active</option>
           <option value="resolved">Resolved</option>
           <option value="false_alarm">False Alarm</option>
@@ -131,6 +132,18 @@
             <span :class="typeDotClass(row.type)" class="inline-block h-1.5 w-1.5 rounded-full mr-1.5"></span>
             {{ row.type }}
           </span>
+        </template>
+
+        <!-- How contacts answered; red while nobody is on the way -->
+        <template #cell-answers="{ row }">
+          <span v-if="row.needs_attention" class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10 whitespace-nowrap">
+            Nobody on the way
+          </span>
+          <span v-else-if="row.answers?.on_my_way" class="text-xs font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+            {{ row.answers.on_my_way }} on the way
+          </span>
+          <span v-else class="text-xs text-slate-400">—</span>
+          <p v-if="row.answers?.cant_help" class="text-[11px] text-slate-400 mt-0.5">{{ row.answers.cant_help }} can't help</p>
         </template>
 
         <!-- Status badge -->
@@ -213,10 +226,13 @@ definePageMeta({ layout: 'admin' })
 const alertsStore = useAlertsStore()
 const { alerts, loading, pagination } = storeToRefs(alertsStore)
 
+// /alerts?attention=1 (the dashboard's "Needs attention" card) opens the
+// follow-up list straight away.
+const route = useRoute()
 const filters = reactive({
   search: '',
   type: '',
-  status: '',
+  status: route.query.attention ? 'needs_attention' : '',
   dateRange: { start: null as Date | null, end: null as Date | null }
 })
 
@@ -243,6 +259,7 @@ const columns = [
   { key: 'location.address', label: 'Location' },
   { key: 'created_at', label: 'Time', format: (val: string) => val ? new Date(val).toLocaleString() : '—' },
   { key: 'status', label: 'Status' },
+  { key: 'answers', label: 'Contacts' },
   { key: 'responseTime', label: 'Response' },
 ]
 
@@ -293,10 +310,14 @@ const formatResponseTime = (alert: any) => {
 
 // 3. Delegation Methods
 const loadAlerts = async () => {
+  // "Needs attention" = active and no contact has said they're on the way:
+  // the alerts to follow up on (backend AlertListView ?needs_attention).
+  const needsAttention = filters.status === 'needs_attention'
   const apiParams = {
     search: filters.search || undefined,
     type: filters.type || undefined,
-    status: filters.status || undefined,
+    status: needsAttention ? undefined : filters.status || undefined,
+    needs_attention: needsAttention ? 'true' : undefined,
   }
   await alertsStore.fetchAlerts(apiParams)
 }

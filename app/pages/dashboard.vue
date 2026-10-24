@@ -16,6 +16,20 @@
       </button>
     </div>
 
+    <!-- The administrator's first job: alerts nobody is answering. -->
+    <NuxtLink
+      v-if="stats.needsAttention && authStore.can('alerts')"
+      to="/alerts?attention=1"
+      class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-red-50 dark:bg-red-500/10 ring-1 ring-red-200 dark:ring-red-500/30 hover:bg-red-100 dark:hover:bg-red-500/15 transition-colors"
+    >
+      <BellAlertIcon class="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
+      <p class="flex-1 text-sm text-red-800 dark:text-red-200">
+        <span class="font-bold">{{ stats.needsAttention }} active alert{{ stats.needsAttention === 1 ? '' : 's' }}</span>
+        {{ stats.needsAttention === 1 ? 'has' : 'have' }} nobody on the way yet. Call the user or nudge their contacts.
+      </p>
+      <span class="text-sm font-semibold text-red-700 dark:text-red-300 whitespace-nowrap">Follow up →</span>
+    </NuxtLink>
+
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatsCard
         title="Active Alerts"
@@ -253,9 +267,11 @@ import ResponseTimeChart from '~/components/admin/Charts/ResponseTimeChart.vue'
 import UserGrowthChart from '~/components/admin/Charts/UserGrowthChart.vue'
 import StatsCard from '~/components/admin/StatsCard.vue'
 import type { Alert } from '~/types'
+import { useAuthStore } from '~/stores/auth'
 
 definePageMeta({ layout: 'admin' })
 
+const authStore = useAuthStore()
 const analyticsStore = useAnalyticsStore()
 const { stats, activeAlerts, alertsByType, responseTimeTrend, userGrowth, recentAlerts } = storeToRefs(analyticsStore)
 const today = computed(() => format(new Date(), 'EEEE, d MMMM yyyy'))

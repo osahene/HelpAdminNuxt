@@ -7,12 +7,19 @@ export default defineNuxtPlugin((nuxtApp) => {
   const $axios = nuxtApp.$axios as AxiosInstance;
 
   const apiService = {
-    register: (data: any) => $axios.post("/trap_admin/register/", data),
     login: (data: any) => $axios.post("/trap_admin/login/", data),
     logout: (data: any) => $axios.post("/trap_admin/logout/", data),
-    verifyEmail: (data: any) => $axios.post("/trap_admin/verify-email/", data),
-    verifyPin: (data: any) => $axios.post("/trap_admin/verify-pin/", data),
-    resendPin: (data: any) => $axios.post("/trap_admin/resend-pin/", data),
+    // No self sign-up: the super admin adds staff (Team page) and they set
+    // their password from the emailed invitation.
+    acceptInviteInfo: (token: string) => $axios.get("/trap_admin/accept-invite/", { params: { token } }),
+    acceptInvite: (data: { token: string; password: string; confirm_password: string }) =>
+      $axios.post("/trap_admin/accept-invite/", data),
+    team: () => $axios.get("/trap_admin/team/"),
+    teamInvite: (data: { first_name: string; last_name: string; email: string; role: string }) =>
+      $axios.post("/trap_admin/team/", data),
+    teamUpdate: (id: string, data: { role?: string; is_active?: boolean }) =>
+      $axios.patch(`/trap_admin/team/${id}/`, data),
+    teamResendInvite: (id: string) => $axios.post(`/trap_admin/team/${id}/resend-invite/`),
     forgotPassword: (data: { email: string }) => $axios.post("/trap_admin/forgot-password/", data),
     resetPassword: (data: { uid: string; token: string; password: string; confirm_password: string }) =>
       $axios.post("/trap_admin/reset-password/", data),

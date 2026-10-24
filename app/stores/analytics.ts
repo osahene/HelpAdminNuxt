@@ -6,6 +6,7 @@ export const useAnalyticsStore = defineStore('analytics', {
   state: () => ({
     stats: {
       activeAlerts: 0,
+      needsAttention: 0,
       avgResponseTime: 0,
       totalUsers: 0,
       avgContactsPerUser: 0
@@ -30,6 +31,7 @@ export const useAnalyticsStore = defineStore('analytics', {
         if (payload) {
           this.stats = {
             activeAlerts: payload.stats?.activeAlerts ?? 0,
+            needsAttention: payload.stats?.needsAttention ?? 0,
             totalUsers: payload.stats?.totalUsers ?? 0,
             avgResponseTime: payload.stats?.avgResponseTime ?? 0,
             avgContactsPerUser: payload.stats?.avgContactsPerUser ?? 0

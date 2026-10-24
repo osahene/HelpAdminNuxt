@@ -1,5 +1,13 @@
 <template>
   <div class="space-y-5">
+    <SendMessageModal
+      :open="messageOpen"
+      recipient-type="single_user"
+      :recipient-id="userId"
+      :recipient-name="user?.name || user?.full_name || 'this user'"
+      :has-app="true"
+      @close="messageOpen = false"
+    />
 
     <div class="flex items-center justify-between gap-3">
       <div class="flex items-center gap-3">
@@ -16,6 +24,13 @@
       </div>
 
       <div class="flex items-center gap-2">
+        <button
+          v-if="authStore.can('messages')"
+          @click="messageOpen = true"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-sky-500 hover:bg-sky-600 text-white shadow-sm transition-all"
+        >
+          <ChatBubbleLeftRightIcon class="h-3.5 w-3.5" /> Send message
+        </button>
         <button
           v-if="user?.deletion_requested_at"
           :disabled="statusUpdating"
@@ -43,7 +58,7 @@
           </button>
         </template>
         <button
-          v-if="!user?.deletion_requested_at"
+          v-if="!user?.deletion_requested_at && authStore.user?.can_delete_users"
           :disabled="statusUpdating"
           @click="runStatusAction('delete', 'Delete this account? It will be deactivated immediately and permanently removed — including their alert/dispatch history — in 30 days unless an admin cancels it first.')"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all disabled:opacity-50"
@@ -215,8 +230,10 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon, BellAlertIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { ArrowLeftIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon, BellAlertIcon, TrashIcon, ChatBubbleLeftRightIcon } from '@heroicons/vue/24/outline'
 import DataTable from '~/components/admin/DataTable.vue'
+import SendMessageModal from '~/components/admin/SendMessageModal.vue'
+import { useAuthStore } from '~/stores/auth'
 import { storeToRefs } from 'pinia'
 import { useUsersStore } from '~/stores/users'
 import type { User, Alert, Contact } from '~/types'
@@ -231,6 +248,10 @@ const userId = route.params.id as string
 
 const usersStore = useUsersStore()
 const { selectedUser: user, loading } = storeToRefs(usersStore)
+
+// What this staff member may do here (backend main_admin/roles.py).
+const authStore = useAuthStore()
+const messageOpen = ref(false)
 
 // UserDetailSerializer embeds contacts/alerts directly on the user record —
 // no separate requests needed to populate them.
