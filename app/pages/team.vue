@@ -80,6 +80,13 @@
                   </button>
                   <button
                     :disabled="busy === member.id"
+                    @click="openSetPassword(member)"
+                    class="text-xs font-medium text-slate-600 hover:text-slate-800 dark:text-slate-300 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-40"
+                  >
+                    Set password
+                  </button>
+                  <button
+                    :disabled="busy === member.id"
                     @click="toggleAccess(member)"
                     :class="[
                       'text-xs font-medium px-2 py-1 rounded-lg transition-colors disabled:opacity-40',
@@ -98,6 +105,39 @@
       </div>
     </div>
 
+    <!-- Set a new password for someone (e.g. they forgot theirs) -->
+    <div
+      v-if="passwordFor"
+      role="dialog"
+      aria-modal="true"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60"
+      @click.self="passwordFor = null"
+    >
+      <form @submit.prevent="savePassword" class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 space-y-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white">Set a new password</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            For {{ passwordFor.name }} ({{ passwordFor.email }}). Their old password stops working, and
+            they're emailed that it changed — but not the password.
+          </p>
+        </div>
+        <div v-if="passwordError" class="text-sm text-red-600 bg-red-50 dark:bg-red-500/10 dark:text-red-300 rounded-lg px-3 py-2">
+          {{ passwordError }}
+        </div>
+        <PasswordFields v-model:password="newPassword.password" v-model:confirm="newPassword.confirm_password" />
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" @click="passwordFor = null"
+            class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+            Cancel
+          </button>
+          <button type="submit" :disabled="savingPassword || !newPassword.password || newPassword.password !== newPassword.confirm_password"
+            class="px-4 py-2 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white disabled:opacity-50">
+            {{ savingPassword ? 'Saving…' : 'Set password' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
     <!-- Add team member -->
     <div
       v-if="inviteOpen"
@@ -113,7 +153,9 @@
         <div>
           <h2 class="text-lg font-bold text-slate-900 dark:text-white">Add team member</h2>
           <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            They'll get an email to set their own password. The link works once, for 3 days.
+            {{ form.emailInvite
+              ? "They'll get an email to set their own password. The link works once, for 3 days."
+              : 'Set their password now — they can sign in straight away.' }}
           </p>
         </div>
 
@@ -144,6 +186,16 @@
           <span class="text-[11px] text-slate-400">{{ ROLES.find(r => r.value === form.role)?.description }}</span>
         </label>
 
+        <PasswordFields
+          v-if="!form.emailInvite"
+          v-model:password="form.password"
+          v-model:confirm="form.confirm_password"
+        />
+        <label class="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+          <input v-model="form.emailInvite" type="checkbox" class="mt-0.5 rounded border-slate-300" />
+          <span>Email them a link to choose their own password instead</span>
+        </label>
+
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" @click="inviteOpen = false"
             class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
@@ -151,7 +203,7 @@
           </button>
           <button type="submit" :disabled="sending"
             class="px-4 py-2 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-600 text-white disabled:opacity-50">
-            {{ sending ? 'Sending…' : 'Send invitation' }}
+            {{ sending ? 'Saving…' : form.emailInvite ? 'Send invitation' : 'Create account' }}
           </button>
         </div>
       </form>
@@ -161,6 +213,7 @@
 
 <script setup lang="ts">
 import { UserPlusIcon } from '@heroicons/vue/24/outline'
+import PasswordFields from '~/components/admin/PasswordFields.vue'
 
 // Super admin only (backend main_admin.views.TeamListView; the route guard
 // keeps everyone else out). Nobody can sign themselves up for the portal.
@@ -211,12 +264,24 @@ const busy = ref<string | null>(null)
 const inviteOpen = ref(false)
 const sending = ref(false)
 const inviteError = ref('')
-const form = reactive({ first_name: '', last_name: '', email: '', role: 'admin' })
+// The super admin sets their password by default; ticking "email them a
+// link" sends an invitation to choose their own instead.
+const EMPTY_FORM = {
+  first_name: '', last_name: '', email: '', role: 'admin',
+  password: '', confirm_password: '', emailInvite: false,
+}
+const form = reactive({ ...EMPTY_FORM })
+
+const passwordFor = ref<Member | null>(null)
+const newPassword = reactive({ password: '', confirm_password: '' })
+const savingPassword = ref(false)
+const passwordError = ref('')
 
 const errorText = (err: any, fallback: string) => {
   const data = err?.response?.data
   const first = (v: any) => (Array.isArray(v) ? v[0] : v)
-  return first(data?.error) || first(data?.email) || first(data?.role) || first(data?.detail) || fallback
+  return first(data?.error) || first(data?.email) || first(data?.role) || first(data?.password)
+    || first(data?.confirm_password) || first(data?.detail) || fallback
 }
 
 const load = async () => {
@@ -236,7 +301,7 @@ const replace = (updated: Member) => {
 }
 
 const openInvite = () => {
-  Object.assign(form, { first_name: '', last_name: '', email: '', role: 'admin' })
+  Object.assign(form, EMPTY_FORM)
   inviteError.value = ''
   inviteOpen.value = true
 }
@@ -245,10 +310,18 @@ const sendInvite = async () => {
   sending.value = true
   inviteError.value = ''
   try {
-    const response = await $api.teamInvite({ ...form })
+    const { emailInvite, ...details } = form
+    const payload = emailInvite ? { ...details, password: '', confirm_password: '' } : details
+    if (!emailInvite && payload.password !== payload.confirm_password) {
+      inviteError.value = 'Passwords do not match.'
+      return
+    }
+    const response = await $api.teamInvite(payload)
     members.value = [...members.value, response?.data || response]
     inviteOpen.value = false
-    toast.add({ title: 'Invitation sent', description: `${form.first_name} will get an email to set their password.`, color: 'success' })
+    toast.add(emailInvite
+      ? { title: 'Invitation sent', description: `${form.first_name} will get an email to set their password.`, color: 'success' }
+      : { title: 'Account created', description: `${form.first_name} can sign in now — give them the password you set.`, color: 'success' })
   } catch (err) {
     inviteError.value = errorText(err, 'Could not add them. Please check the details and try again.')
   } finally {
@@ -282,6 +355,29 @@ const toggleAccess = async (member: Member) => {
     toast.add({ title: 'Not changed', description: errorText(err, 'Please try again.'), color: 'error' })
   } finally {
     busy.value = null
+  }
+}
+
+const openSetPassword = (member: Member) => {
+  Object.assign(newPassword, { password: '', confirm_password: '' })
+  passwordError.value = ''
+  passwordFor.value = member
+}
+
+const savePassword = async () => {
+  const member = passwordFor.value
+  if (!member) return
+  savingPassword.value = true
+  passwordError.value = ''
+  try {
+    const response = await $api.teamUpdate(member.id, { ...newPassword })
+    replace(response?.data || response)
+    passwordFor.value = null
+    toast.add({ title: 'Password set', description: `Give ${member.name} their new password.`, color: 'success' })
+  } catch (err) {
+    passwordError.value = errorText(err, 'Could not set the password. Please try again.')
+  } finally {
+    savingPassword.value = false
   }
 }
 

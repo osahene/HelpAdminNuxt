@@ -15,9 +15,13 @@ export default defineNuxtPlugin((nuxtApp) => {
     acceptInvite: (data: { token: string; password: string; confirm_password: string }) =>
       $axios.post("/trap_admin/accept-invite/", data),
     team: () => $axios.get("/trap_admin/team/"),
-    teamInvite: (data: { first_name: string; last_name: string; email: string; role: string }) =>
+    // With a password the account works straight away; without, they're
+    // emailed a link to set their own.
+    teamInvite: (data: { first_name: string; last_name: string; email: string; role: string;
+                         password?: string; confirm_password?: string }) =>
       $axios.post("/trap_admin/team/", data),
-    teamUpdate: (id: string, data: { role?: string; is_active?: boolean }) =>
+    teamUpdate: (id: string, data: { role?: string; is_active?: boolean;
+                                     password?: string; confirm_password?: string }) =>
       $axios.patch(`/trap_admin/team/${id}/`, data),
     teamResendInvite: (id: string) => $axios.post(`/trap_admin/team/${id}/resend-invite/`),
     forgotPassword: (data: { email: string }) => $axios.post("/trap_admin/forgot-password/", data),
